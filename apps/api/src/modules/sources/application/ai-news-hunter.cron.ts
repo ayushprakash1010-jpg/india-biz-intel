@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import { LlmService } from '../../llm/llm.service';
@@ -9,6 +9,16 @@ import { QUEUES } from '../../../infrastructure/queue/queue.constants';
 import * as Parser from 'rss-parser';
 import { z } from 'zod';
 
+const ARTICLE_TOPICS = [
+  'FUNDING',
+  'LEADERSHIP_CHANGE',
+  'ENTRY_IN_INDIA',
+  'EXPANSION',
+  'MERGERS_AND_ACQUISITION',
+  'GCC_SETUP',
+  'INDUSTRY_OUTLOOK',
+] as const;
+
 const hunterResultSchema = z.object({
   articles: z
     .array(
@@ -18,12 +28,17 @@ const hunterResultSchema = z.object({
         summary: z
           .string()
           .describe(
-            'A detailed 2-3 paragraph summary explaining the announcement, strategic details, numbers (headcount, investment), and why it is highly relevant to India GCCs',
+            'A detailed 2-3 paragraph summary explaining the announcement, company name, deal amount or headcount, people involved, geography, and why it is significant to India business professionals and investors',
           ),
         author: z
           .string()
           .optional()
           .describe('The author if available, or publisher name'),
+        topic: z
+          .enum(ARTICLE_TOPICS)
+          .describe(
+            'Classify the article into exactly one topic: FUNDING (investment rounds, VC/PE deals), LEADERSHIP_CHANGE (CEO/CXO/MD appointments or exits), ENTRY_IN_INDIA (global company entering India market for first time), EXPANSION (company expanding existing India operations), MERGERS_AND_ACQUISITION (M&A deals, buyouts, acquisitions), GCC_SETUP (Global Capability Center setup or restructuring in India), INDUSTRY_OUTLOOK (research reports, macro analysis from BCG/Bain/Kearney/NASSCOM)',
+          ),
       }),
     )
     .describe(
@@ -36,25 +51,25 @@ export class AiNewsHunterCron {
   private readonly logger = new Logger(AiNewsHunterCron.name);
   private readonly rssParser = new Parser();
 
-  // The topics we want Gemini to hunt for — 6 core topics × 2 articles = ~12 per daily run
+  // 6 core India corporate event topics x 2 articles = ~12 per daily run
   private readonly targetTopics = [
-    // Core GCC expansion & new setups
-    'Global Capability Center GCC expansion India 2026',
+    // 1. Funding rounds - VC, PE, Series A/B/C, debt funding
+    'India startup company funding round investment 2026 Series',
 
-    // City-specific leasing & real estate (manager priority: Hyderabad leasing surge)
-    'Hyderabad Bangalore GCC leasing office real estate 2026',
+    // 2. Leadership changes - C-suite appointments and exits
+    'India CEO CXO MD director appointment resignation leadership change 2026',
 
-    // Cross-border GCC: European/US companies entering India (manager priority: German companies)
-    'European German American company GCC India expansion',
+    // 3. Global companies entering India for the first time
+    'global company entering India market launch first 2026',
 
-    // Workforce, reskilling, AI impact on GCC jobs (manager priority: AI & future of GCC jobs)
-    'GCC India workforce reskilling AI jobs hiring 2026',
+    // 4. Business expansion - new offices, headcount growth, new geographies
+    'India business expansion new office plant capacity headcount 2026',
 
-    // Research & data-led stories from NASSCOM, Zinnov, JLL, CBRE
-    'NASSCOM Zinnov GCC India report data 2026',
+    // 5. Mergers & Acquisitions
+    'India merger acquisition deal buyout takeover 2026',
 
-    // GCC leadership & strategy (generates high-engagement content like Deutsche Bank, CEO strategy)
-    'GCC India CXO leadership technology innovation strategy',
+    // 6. GCC setup - Global Capability Center announcements in India
+    'Global Capability Center GCC India setup announcement new 2026',
   ];
 
   constructor(
@@ -67,17 +82,17 @@ export class AiNewsHunterCron {
   // Run every day at 8:00 AM IST
   @Cron('0 8 * * *', { timeZone: 'Asia/Kolkata' })
   async runNewsHunter(): Promise<void> {
-    this.logger.log('Starting AI News Hunter...');
+    this.logger.log('Starting India BizIntel News Hunter...');
 
-    // 1. Ensure we have an "AI News Hunter" source in the DB
+    // 1. Ensure we have an "India BizIntel Hunter" source in the DB
     let source = await this.prisma.source.findFirst({
-      where: { name: 'AI News Hunter' },
+      where: { name: 'India BizIntel Hunter' },
     });
 
     if (!source) {
       source = await this.prisma.source.create({
         data: {
-          name: 'AI News Hunter',
+          name: 'India BizIntel Hunter',
           type: 'RSS',
           url: 'https://news.google.com',
           status: 'ACTIVE',
@@ -190,41 +205,42 @@ export class AiNewsHunterCron {
 
         // 4. Ask Gemini to filter and select the top 2-3 from fresh candidates
         const prompt = `
-          You are an expert content analyst for GCC Quest — a platform exclusively covering
-          Global Capability Centers (GCCs) in India.
+          You are an expert content analyst for India BizIntel - a platform covering
+          key corporate events in India: Funding, Leadership Changes, Market Entry,
+          Business Expansion, Mergers & Acquisitions, and GCC (Global Capability Center) Setups.
 
-          CONTEXT: A GCC (Global Capability Center) is a captive unit set up by a
-          multinational company in India to deliver technology, R&D, operations, or
-          shared services for the parent company globally.
-          Examples: Walmart Global Tech India, Goldman Sachs Bengaluru, HSBC Tech India,
-          Bosch Engineering India, JP Morgan India GCC.
+          AUDIENCE: India-focused business professionals, investors, consultants, and strategists
+          who read MoneyControl, Economic Times, and Business Standard.
 
           I searched Google News for "${topic}" and found these FRESH, UNSEEN articles:
 
           ${JSON.stringify(freshCandidates, null, 2)}
 
-          YOUR TASK — be a strict editorial filter:
+          YOUR TASK - be a strict editorial filter:
 
-          PRIORITY 1 — MUST SELECT if present (these are primary GCC stories):
-          - A multinational company setting up, expanding, or restructuring a GCC in India
-          - GCC workforce news: hiring surges, reskilling programs, AI impact on GCC jobs
-          - GCC real estate: office leasing data, city-wise growth, SEZ announcements
-          - Policy or government initiatives directly supporting GCCs
-          - Research/data reports on India's GCC ecosystem (NASSCOM, Zinnov, JLL, CBRE)
+          PRIORITY 1 - MUST SELECT if present (high-value corporate event stories):
+          - Funding: Named company raising a funding round with deal size or investor name mentioned
+          - Leadership Change: Named executive (CEO, CXO, MD, Director) appointed or departing from a named Indian or India-operating company
+          - Entry in India: A global company officially launching or entering the Indian market for the first time
+          - Expansion: A company expanding India operations - new city, new office, significant headcount addition, new plant or facility
+          - M&A: A named merger, acquisition, buyout, or stake purchase involving an Indian company or an India-operating entity
+          - GCC Setup: A multinational company setting up or significantly expanding a Global Capability Center in India
 
-          PRIORITY 2 — MAY SELECT a maximum of 1 per run (secondary content):
-          - India deeptech or enterprise tech startup funding with clear GCC-sector relevance
-          - Women leaders or founders in India's GCC or enterprise tech ecosystem
+          PRIORITY 2 - MAY SELECT a maximum of 1 per run (secondary content):
+          - Industry outlook: Research or analysis reports from BCG, Bain, Kearney, McKinsey, NASSCOM, Zinnov, JLL, or CBRE with clear India business relevance
 
-          HARD DISCARD — never select these:
-          - Consumer startup funding (D2C, fintech, edtech, gaming) with no GCC connection
-          - Generic global AI product releases with no India GCC context
-          - General stock market, mutual fund, or retail investment news
-          - Celebrity, sports, or lifestyle content
+          HARD DISCARD - never select these:
+          - Generic global AI product releases with no India corporate action
+          - General stock market, mutual fund, or retail investment news (no named deal)
+          - Celebrity, sports, lifestyle, or political content
+          - Articles without a named company, person, or deal amount
+          - Pure opinion pieces with no factual corporate announcement
 
           Select 2 (up to 3 if multiple high-impact stories exist) articles total.
           If fewer than 2 articles meet the criteria, return only the qualifying ones. Do NOT force-select off-topic articles.
-          For each selected article, write a detailed 2 to 3 paragraph summary explaining the core announcement, specific numbers/metrics (headcount, location, investment), the strategic business rationale, and why it is significant to India's GCC ecosystem.
+          For each selected article:
+          1. Write a detailed 2 to 3 paragraph summary covering: the core announcement, company name, deal amount or headcount, people involved, geography, and why it matters to India business professionals.
+          2. Classify it into exactly one topic from: FUNDING, LEADERSHIP_CHANGE, ENTRY_IN_INDIA, EXPANSION, MERGERS_AND_ACQUISITION, GCC_SETUP, INDUSTRY_OUTLOOK.
         `;
 
         const result = await this.llmService.generateStructured(
@@ -240,7 +256,7 @@ export class AiNewsHunterCron {
         // treat it as a retriable error instead of silently producing zero articles.
         if (!result.articles || result.articles.length === 0) {
           this.logger.warn(
-            `Gemini returned 0 articles for topic "${topic}" — skipping topic (possible rate limit or no relevant results).`,
+            `Gemini returned 0 articles for topic "${topic}" - skipping topic (possible rate limit or no relevant results).`,
           );
           continue;
         }
@@ -270,8 +286,8 @@ export class AiNewsHunterCron {
 
             // Generate OG Image Fallback
             const baseUrl =
-              process.env.FRONTEND_URL || 'https://gcc-quest-web.vercel.app';
-            const imageUrl = `${baseUrl}/api/og?title=${encodeURIComponent(extractedArticle.title)}&source=${encodeURIComponent('AI Discovered')}`;
+              process.env.FRONTEND_URL || 'https://india-biz-intel.vercel.app';
+            const imageUrl = `${baseUrl}/api/og?title=${encodeURIComponent(extractedArticle.title)}&source=${encodeURIComponent('India BizIntel Hunter')}`;
 
             // Save to DB
             const savedArticle = await this.prisma.article.create({
@@ -279,9 +295,9 @@ export class AiNewsHunterCron {
                 sourceId: source.id,
                 externalUrl: extractedArticle.url,
                 title: extractedArticle.title,
-                author: extractedArticle.author || 'AI News Hunter',
+                author: extractedArticle.author || 'India BizIntel Hunter',
                 publishedAt: new Date(),
-                rawText: extractedArticle.summary, // We use the AI's summary as the raw text since we didn't scrape the full body
+                rawText: extractedArticle.summary,
                 contentHash: hash,
                 wordCount: extractedArticle.summary.split(/\s+/).length,
                 imageUrl,
@@ -289,7 +305,7 @@ export class AiNewsHunterCron {
             });
 
             this.logger.log(
-              `Successfully hunted and saved: ${savedArticle.title}`,
+              `Successfully hunted and saved: ${savedArticle.title} [${extractedArticle.topic}]`,
             );
 
             // Keep in-memory deduplication cache up-to-date for subsequent topics
@@ -312,7 +328,7 @@ export class AiNewsHunterCron {
       }
     }
 
-    this.logger.log('AI News Hunter run complete!');
+    this.logger.log('India BizIntel News Hunter run complete!');
   }
 
   private calculateSimilarity(str1: string, str2: string): number {

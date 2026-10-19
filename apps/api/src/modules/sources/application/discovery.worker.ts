@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+﻿import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { Logger } from '@nestjs/common';
@@ -129,7 +129,7 @@ export class DiscoveryWorker extends WorkerHost {
       }
 
       // Update last crawled timestamp
-      // Update last crawled timestamp — using prisma directly since lastCrawledAt is
+      // Update last crawled timestamp â€” using prisma directly since lastCrawledAt is
       // an internal operational field not part of the public UpdateSourceDto contract.
       await this.prisma.source.update({
         where: { id: sourceId },
@@ -163,3 +163,4 @@ export class DiscoveryWorker extends WorkerHost {
     }
   }
 }
+
