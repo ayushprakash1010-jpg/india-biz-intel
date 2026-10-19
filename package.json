@@ -8,7 +8,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "type-check": "turbo run type-check",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "clean": "turbo run clean"
   },
   "lint-staged": {
