@@ -34,10 +34,25 @@ async function bootstrap() {
   app.use(compression());
 
   // Enable CORS
-  const frontendUrl =
-    configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+  const frontendUrl = configService.get<string>('FRONTEND_URL');
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://india-biz-intel.vercel.app',
+  ];
+  if (frontendUrl && !allowedOrigins.includes(frontendUrl)) {
+    allowedOrigins.push(frontendUrl);
+  }
   app.enableCors({
-    origin: [frontendUrl, 'http://localhost:3000'],
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app')
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   });
 
