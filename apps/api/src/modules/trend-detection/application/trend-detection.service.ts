@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DomainEvents } from '@gcc-quest/shared-types';
@@ -28,7 +28,7 @@ export class TrendDetectionService {
     dateLimit.setDate(dateLimit.getDate() - windowDays);
 
     // HIGH-05: Added take + orderBy to prevent OOM at scale (was unbounded findMany).
-    // Selects the 500 highest-impact recent articles — correct for trend detection.
+    // Selects the 500 highest-impact recent articles â€” correct for trend detection.
     // At current data volumes this cap is never hit; it's a safety net for production scale.
     const articles = await this.prisma.article.findMany({
       where: {
@@ -76,9 +76,9 @@ export class TrendDetectionService {
       const score = article.trendScore;
 
       // Category
-      if (article.analysis.gccCategory) {
+      if (article.analysis.eventCategory) {
         // Categories are generally single strings, but wrap in Set for consistency if they become arrays later
-        const cat = article.analysis.gccCategory;
+        const cat = article.analysis.eventCategory;
         if (!catMap.has(cat)) catMap.set(cat, { score: 0, articles: [] });
         const val = catMap.get(cat)!;
         val.score += score;
@@ -205,3 +205,4 @@ export class TrendDetectionService {
     }
   }
 }
+

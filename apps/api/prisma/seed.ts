@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+﻿import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -123,7 +123,7 @@ async function main() {
       status: 'ACTIVE',
     },
     {
-      name: 'Economic Times — GCC/Corporate',
+      name: 'Economic Times â€” GCC/Corporate',
       url: 'https://economictimes.indiatimes.com/tech/rssfeeds.cms',
       type: 'RSS',
       category: 'NEWS',
@@ -275,3 +275,4 @@ main()
     await prisma.$disconnect();
     process.exit(0);
   });
+

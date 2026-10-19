@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
 
@@ -172,14 +172,14 @@ export class AnalyticsService {
   async getCategories(days: number) {
     const after = this.getDateFilter(days);
     const result = await this.prisma.articleAnalysis.groupBy({
-      by: ['gccCategory'],
-      _count: { gccCategory: true },
+      by: ['eventCategory'],
+      _count: { eventCategory: true },
       where: { createdAt: { gte: after } },
     });
     return result
       .map((r: any) => ({
-        category: r.gccCategory,
-        count: r._count.gccCategory,
+        category: r.eventCategory,
+        count: r._count.eventCategory,
       }))
       .sort((a: any, b: any) => b.count - a.count);
   }
@@ -333,3 +333,4 @@ export class AnalyticsService {
       .sort((a, b) => b.totalRuns - a.totalRuns);
   }
 }
+

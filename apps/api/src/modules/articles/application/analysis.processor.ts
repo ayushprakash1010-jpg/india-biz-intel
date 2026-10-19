@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -15,12 +15,12 @@ const analysisSchema = z.object({
   summary: z
     .string()
     .describe(
-      'A detailed 2-3 paragraph breakdown of the article covering the key event/announcement, strategic context, and implications for India’s GCC ecosystem',
+      'A detailed 2-3 paragraph breakdown of the article covering the key event/announcement, strategic context, and implications for Indiaâ€™s GCC ecosystem',
     ),
   sentiment: z
     .string()
     .describe('Overall sentiment (POSITIVE, NEGATIVE, NEUTRAL)'),
-  gccCategory: z
+  eventCategory: z
     .string()
     .describe(
       'Category of GCC news (e.g. Expansion, Hiring, Tech Innovation, Policy, M&A, Leadership, Regulatory)',
@@ -123,7 +123,7 @@ export class AnalysisProcessor extends WorkerHost {
         update: {
           summary: analysisResult.summary,
           sentiment: analysisResult.sentiment,
-          gccCategory: analysisResult.gccCategory,
+          eventCategory: analysisResult.eventCategory,
           entities: analysisResult.entities,
           impactScore: analysisResult.impactScore,
           promptKey: 'article-analysis',
@@ -134,7 +134,7 @@ export class AnalysisProcessor extends WorkerHost {
           articleId: article.id,
           summary: analysisResult.summary,
           sentiment: analysisResult.sentiment,
-          gccCategory: analysisResult.gccCategory,
+          eventCategory: analysisResult.eventCategory,
           entities: analysisResult.entities,
           impactScore: analysisResult.impactScore,
           promptKey: 'article-analysis',
@@ -179,3 +179,4 @@ export class AnalysisProcessor extends WorkerHost {
     }
   }
 }
+

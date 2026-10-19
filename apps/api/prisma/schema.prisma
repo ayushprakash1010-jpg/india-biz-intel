@@ -1,4 +1,4 @@
-generator client {
+﻿generator client {
   provider = "prisma-client-js"
 }
 
@@ -139,6 +139,7 @@ model Article {
   imageUrl      String?          @map("image_url")
   language      String?          @default("en") @db.VarChar(10)
   status        ArticleStatus    @default(DISCOVERED)
+  topic         ArticleTopic?    @map("topic")
   clusterId     String?          @map("cluster_id") @db.Uuid
   discoveredAt  DateTime         @default(now()) @map("discovered_at") @db.Timestamptz(6)
   updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -152,6 +153,7 @@ model Article {
   @@index([status])
   @@index([publishedAt(sort: Desc)])
   @@index([discoveredAt(sort: Desc)])
+  @@index([topic])
   @@index([clusterId])
   @@map("articles")
 }
@@ -161,7 +163,7 @@ model ArticleAnalysis {
   articleId       String   @unique @map("article_id") @db.Uuid
   summary         String
   sentiment       String   @db.VarChar(50)
-  gccCategory     String   @map("gcc_category") @db.VarChar(100)
+  eventCategory  String   @map("event_category") @db.VarChar(100)
   entities        Json     @default("{}")
   impactScore     Float    @map("impact_score")
   promptKey       String   @map("prompt_key") @db.VarChar(100)
@@ -360,6 +362,16 @@ model CalendarRule {
   @@map("calendar_rules")
 }
 
+enum ArticleTopic {
+  FUNDING
+  LEADERSHIP_CHANGE
+  ENTRY_IN_INDIA
+  EXPANSION
+  MERGERS_AND_ACQUISITION
+  GCC_SETUP
+  INDUSTRY_OUTLOOK
+}
+
 enum UserRole {
   ADMIN
   EDITOR
@@ -439,3 +451,4 @@ enum ScheduleStatus {
   FAILED
   CANCELED
 }
+

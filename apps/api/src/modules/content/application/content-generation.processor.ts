@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import { PromptService } from '../../prompts/infrastructure/prompt.service';
@@ -78,7 +78,7 @@ export class ContentGenerationProcessor {
 
       // 2. Gather Context and dynamically select prompt based on category
       let promptKey = 'writer-industry-news';
-      const category = article.analysis.gccCategory?.toLowerCase() || '';
+      const category = article.analysis.eventCategory?.toLowerCase() || '';
       if (
         category.includes('expansion') ||
         category.includes('setup') ||
@@ -116,7 +116,7 @@ export class ContentGenerationProcessor {
       const renderedPrompt = this.promptService.render(promptVersion, {
         title: article.title,
         summary: article.analysis.summary,
-        category: article.analysis.gccCategory,
+        category: article.analysis.eventCategory,
         entities: article.analysis.entities,
         impactScore: article.analysis.impactScore,
         rawText: article.rawText,
@@ -170,3 +170,4 @@ export class ContentGenerationProcessor {
     }
   }
 }
+
