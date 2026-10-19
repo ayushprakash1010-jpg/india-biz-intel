@@ -1,0 +1,306 @@
+import { ImageResponse } from "next/og";
+import { NextRequest } from "next/server";
+import { GCC_QUEST_LOGO_DATA_URI } from "@/lib/logo-data-uri";
+
+export const runtime = "edge";
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+
+    // Extract query parameters
+    const title = searchParams.get("title") || "GCC Industry Updates";
+    const source = searchParams.get("source") || "India BizIntel Insights";
+    const customH1 = searchParams.get("h1");
+    const customH2 = searchParams.get("h2");
+    const customBg = searchParams.get("bg");
+    const aspect = searchParams.get("aspect") || "square"; // "square" (1:1) default for LinkedIn
+
+    // Determine headline lines
+    let part1 = customH1;
+    let part2 = customH2;
+
+    if (!part1 || !part2) {
+      // Intelligently split the title into a punchy 2-line headline
+      const words = title.trim().split(/\s+/);
+      if (words.length <= 4) {
+        const mid = Math.ceil(words.length / 2);
+        part1 = words.slice(0, mid).join(" ");
+        part2 = words.slice(mid).join(" ");
+      } else {
+        const mid = Math.min(4, Math.ceil(words.length / 2));
+        part1 = words.slice(0, mid).join(" ");
+        const rest = words.slice(mid, mid + 5).join(" ");
+        part2 = rest + (words.length > mid + 5 ? "..." : "");
+      }
+    }
+
+    // Determine background image (use passed bg, or generate free high-speed visual via Pollinations)
+    let bgUrl = customBg;
+    if (!bgUrl) {
+      const cleanKeywords = title
+        .replace(/[^\w\s]/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const lowerTitle = title.toLowerCase();
+
+      // Deterministic seed based on title hash so each article gets a completely unique, distinct visual
+      const seed =
+        Math.abs(
+          title
+            .split("")
+            .reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0),
+        ) % 1000000;
+
+      let promptDesc = "";
+      if (
+        lowerTitle.includes("ai") ||
+        lowerTitle.includes("skill") ||
+        lowerTitle.includes("talent") ||
+        lowerTitle.includes("workforce") ||
+        lowerTitle.includes("hiring") ||
+        lowerTitle.includes("job") ||
+        lowerTitle.includes("reskill") ||
+        lowerTitle.includes("salary")
+      ) {
+        promptDesc =
+          "modern futuristic collaborative tech office interior, engineers collaborating on software innovation in Bangalore cyber hub, glass walls, ambient glowing blue and amber lighting, professional architectural photography, 8k";
+      } else if (
+        lowerTitle.includes("leasing") ||
+        lowerTitle.includes("real estate") ||
+        lowerTitle.includes("hyderabad") ||
+        lowerTitle.includes("bengaluru") ||
+        lowerTitle.includes("bangalore") ||
+        lowerTitle.includes("office") ||
+        lowerTitle.includes("space")
+      ) {
+        promptDesc =
+          "aerial cityscape view of modern financial cyber district in India, illuminated futuristic glass towers, bustling corporate corridor at dusk, architectural photography, dramatic sky, photorealistic 8k";
+      } else if (
+        lowerTitle.includes("cxo") ||
+        lowerTitle.includes("leader") ||
+        lowerTitle.includes("ceo") ||
+        lowerTitle.includes("appoint") ||
+        lowerTitle.includes("strategy") ||
+        lowerTitle.includes("revenue") ||
+        lowerTitle.includes("billion")
+      ) {
+        promptDesc =
+          "executive high-floor corporate boardroom in glass skyscraper, conference table, panoramic window view of modern city, sleek corporate atmosphere, architectural photography, photorealistic 8k";
+      } else {
+        promptDesc =
+          "modern grand entrance of multinational innovation hub, contemporary architecture in India, sleek glass facade, landscaped corporate park, bright daylight, architectural photography, photorealistic 8k";
+      }
+
+      const prompt = encodeURIComponent(
+        `${promptDesc}, ${cleanKeywords.slice(0, 60)}`,
+      );
+      // Use turbo with unique seed for fast 2-3s diverse rendering
+      bgUrl = `https://image.pollinations.ai/prompt/${prompt}?width=1080&height=1080&model=turbo&seed=${seed}&nologo=true`;
+    }
+
+    // Pre-fetch the background image into base64 with a 4.5s timeout.
+    // This guarantees Satori renders in 20ms in memory and NEVER times out or streams 0 bytes.
+    let bgDataUri: string | null = null;
+    if (bgUrl) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4500);
+        const imgRes = await fetch(bgUrl, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (imgRes.ok) {
+          const buffer = await imgRes.arrayBuffer();
+          if (buffer.byteLength > 2000) {
+            const base64 = Buffer.from(buffer).toString("base64");
+            const mime = imgRes.headers.get("content-type") || "image/jpeg";
+            bgDataUri = `data:${mime};base64,${base64}`;
+          }
+        }
+      } catch {
+        // Fallback gracefully to high-contrast corporate tech gradient
+      }
+    }
+
+    const isSquare = aspect !== "landscape";
+    const width = isSquare ? 1080 : 1200;
+    const height = isSquare ? 1080 : 630;
+
+    return new ImageResponse(
+      <div
+        style={{
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          backgroundColor: "#070b19",
+          overflow: "hidden",
+          fontFamily: "sans-serif",
+        }}
+      >
+        {/* 1. Photorealistic Background Image or Ambient Tech Slate Gradient */}
+        {bgDataUri ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={bgDataUri}
+            alt=""
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background:
+                "radial-gradient(circle at 75% 25%, #1e293b 0%, #0f172a 45%, #020617 100%)",
+            }}
+          />
+        )}
+
+        {/* 2. Top-to-Bottom Multi-Stop Vignette Overlay for Seamless Logo Blending and High Typography Contrast */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: isSquare ? "460px" : "320px",
+            background:
+              "linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0.95) 50%, rgba(0, 0, 0, 0.5) 80%, rgba(0, 0, 0, 0) 100%)",
+          }}
+        />
+
+        {/* 3. Top Header: Official India BizIntel Logo */}
+        <div
+          style={{
+            position: "absolute",
+            top: isSquare ? 48 : 36,
+            left: isSquare ? 56 : 48,
+            display: "flex",
+            alignItems: "center",
+            zIndex: 10,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={GCC_QUEST_LOGO_DATA_URI}
+            alt="India BizIntel"
+            style={{
+              width: isSquare ? 320 : 260,
+              height: isSquare ? 90 : 75,
+              objectFit: "contain",
+            }}
+          />
+        </div>
+
+        {/* 4. Dual-Tone Bold Headline in Upper Quadrant */}
+        <div
+          style={{
+            position: "absolute",
+            top: isSquare ? 168 : 130,
+            left: isSquare ? 56 : 48,
+            right: isSquare ? 56 : 48,
+            display: "flex",
+            flexDirection: "column",
+            zIndex: 10,
+          }}
+        >
+          <div
+            style={{
+              fontSize: isSquare ? 52 : 44,
+              fontWeight: 900,
+              color: "#ffffff",
+              lineHeight: 1.15,
+              letterSpacing: "-0.02em",
+              textShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
+            }}
+          >
+            {part1}
+          </div>
+          <div
+            style={{
+              fontSize: isSquare ? 52 : 44,
+              fontWeight: 900,
+              color: "#38bdf8", // Vibrant Sky Cyan / Teal Accent
+              lineHeight: 1.15,
+              letterSpacing: "-0.02em",
+              marginTop: 6,
+              textShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
+            }}
+          >
+            {part2}
+          </div>
+        </div>
+
+        {/* 5. Sleek Solid Black Bottom Bar (Cleanly Conceals Any Background Watermarks and Grounds the Graphic) */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: isSquare ? "78px" : "64px",
+            backgroundColor: "#000000",
+            borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingLeft: isSquare ? 56 : 48,
+            paddingRight: isSquare ? 56 : 48,
+            zIndex: 15,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "rgba(56, 189, 248, 0.15)",
+              border: "1px solid rgba(56, 189, 248, 0.4)",
+              padding: "6px 20px",
+              borderRadius: "20px",
+              color: "#7dd3fc",
+              fontSize: isSquare ? 17 : 14,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            {source}
+          </div>
+          <div
+            style={{
+              color: "#94a3b8",
+              fontSize: isSquare ? 19 : 15,
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            gcc-quest.com
+          </div>
+        </div>
+      </div>,
+      {
+        width,
+        height,
+        headers: {
+          "Cache-Control":
+            "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400",
+        },
+      },
+    );
+  } catch (e: unknown) {
+    console.error(e);
+    return new Response("Failed to generate image", { status: 500 });
+  }
+}

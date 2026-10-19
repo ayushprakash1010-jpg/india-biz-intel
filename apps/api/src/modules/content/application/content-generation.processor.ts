@@ -1,0 +1,172 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
+import { PrismaService } from '../../../infrastructure/database/prisma.service';
+import { PromptService } from '../../prompts/infrastructure/prompt.service';
+import { ObservabilityService } from '../../observability/observability.service';
+import { LlmService } from '../../llm/llm.service';
+import { BrandVoiceService } from '../../brand-intelligence/application/brand-voice.service';
+import { FeedbackService } from '../../feedback/application/feedback.service';
+import { ContentRepository } from '../infrastructure/content.repository';
+import { DomainEvents } from '@gcc-quest/shared-types';
+import { SettingsCacheService } from '../../../common/cache/settings-cache.service';
+import { z } from 'zod';
+
+const draftsSchema = z.object({
+  variants: z
+    .array(z.string())
+    .describe('Array of exactly 2 different post drafts'),
+});
+
+@Injectable()
+export class ContentGenerationProcessor {
+  private readonly logger = new Logger(ContentGenerationProcessor.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly promptService: PromptService,
+    private readonly observability: ObservabilityService,
+    private readonly llm: LlmService,
+    private readonly brandVoiceService: BrandVoiceService,
+    private readonly feedbackService: FeedbackService,
+    private readonly contentRepository: ContentRepository,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly settingsCache: SettingsCacheService,
+  ) {}
+
+  @OnEvent(DomainEvents.ARTICLE_ANALYZED)
+  async handleArticleAnalyzed(payload: {
+    articleId: string;
+    sourceId: string;
+  }) {
+    this.logger.log(
+      `Received ARTICLE_ANALYZED for generation evaluation: ${payload.articleId}`,
+    );
+
+    try {
+      const article = await this.prisma.article.findUnique({
+        where: { id: payload.articleId },
+        include: { analysis: true, source: true },
+      });
+
+      if (!article || !article.analysis) return;
+
+      // 1. Rule Check: threshold (HIGH-06: cached, avoids DB hit on every article)
+      const threshold = parseFloat(
+        await this.settingsCache.get('config.analysis_threshold', '7'),
+      );
+
+      // AI News Hunter articles are pre-filtered by Gemini for quality,
+      // so we skip the impact score threshold to ensure they always get a draft.
+      const isAiHunted = (article as any).source?.name === 'AI News Hunter';
+
+      if (!isAiHunted && article.analysis.impactScore < threshold) {
+        this.logger.log(
+          `Article ${article.id} impact (${article.analysis.impactScore}) below threshold (${threshold}). Skipping generation.`,
+        );
+        return;
+      }
+
+      // Check if feature enabled (HIGH-06: cached)
+      const autoGenEnabled = await this.settingsCache.get(
+        'feature.auto_generation',
+        'true',
+      );
+      if (autoGenEnabled === 'false') {
+        this.logger.log(`Auto generation feature flag is disabled.`);
+        return;
+      }
+
+      // 2. Gather Context and dynamically select prompt based on category
+      let promptKey = 'writer-industry-news';
+      const category = article.analysis.gccCategory?.toLowerCase() || '';
+      if (
+        category.includes('expansion') ||
+        category.includes('setup') ||
+        category.includes('office') ||
+        category.includes('real estate')
+      ) {
+        promptKey = 'writer-expansion';
+      } else if (
+        category.includes('hiring') ||
+        category.includes('talent') ||
+        category.includes('leadership') ||
+        category.includes('workforce')
+      ) {
+        promptKey = 'writer-hiring';
+      } else if (
+        category.includes('research') ||
+        category.includes('report') ||
+        category.includes('data')
+      ) {
+        promptKey = 'writer-research';
+      }
+
+      const promptVersion = this.promptService.getActive(promptKey);
+      const defaultBrandVoice = await this.brandVoiceService.getDefault();
+      const feedbackContext = await this.feedbackService.getFeedbackContext(
+        'LINKEDIN',
+        3,
+      );
+
+      const brandVoiceSection =
+        this.brandVoiceService.buildPromptSection(defaultBrandVoice);
+
+      // 3. Render with full strategic context
+      const sourceName = (article as any).source?.name || 'Industry Source';
+      const renderedPrompt = this.promptService.render(promptVersion, {
+        title: article.title,
+        summary: article.analysis.summary,
+        category: article.analysis.gccCategory,
+        entities: article.analysis.entities,
+        impactScore: article.analysis.impactScore,
+        rawText: article.rawText,
+        sourceName,
+        brandVoiceConfig: brandVoiceSection,
+        feedbackContext,
+      });
+
+      // 4. Generate variants
+      const result = await this.observability.trackRun(
+        {
+          runType: 'content-generation',
+          promptKey,
+          promptVersion: promptVersion.version,
+          model: 'gemini-3.8-flash',
+          contextId: article.id,
+        },
+        () => this.llm.generateStructured(renderedPrompt, draftsSchema),
+      );
+
+      if (!result.variants || result.variants.length === 0) {
+        this.logger.warn(`No variants generated for article ${article.id}`);
+        return;
+      }
+
+      // 5. Save to ContentDraft
+      const draft = await this.contentRepository.createDraftWithVersions({
+        articleId: article.id,
+        brandVoiceId: defaultBrandVoice?.id,
+        targetPlatform: 'LINKEDIN',
+        versions: result.variants,
+        promptKey,
+        promptVersion: promptVersion.version,
+      });
+
+      // MED-09: Update article status so it doesn't stay stuck in ANALYZED
+      await this.prisma.article.update({
+        where: { id: article.id },
+        data: { status: 'CONTENT_GENERATED' },
+      });
+
+      this.logger.log(
+        `Generated ${result.variants.length} draft variants for article ${article.id}`,
+      );
+      this.eventEmitter.emit('draft.generated', { draftId: draft.id });
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to generate content for article ${payload.articleId}: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+}
