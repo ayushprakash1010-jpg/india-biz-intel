@@ -40,7 +40,7 @@ export class BufferPublisherService {
       body: JSON.stringify({
         content,
         imageUrl: imageUrl || null,
-        source: 'gcc-quest',
+        source: 'india-biz-intel',
         timestamp: new Date().toISOString(),
       }),
     });
@@ -53,7 +53,7 @@ export class BufferPublisherService {
     }
 
     this.logger.log(`Company Page webhook delivered successfully.`);
-    return `https://www.linkedin.com/company/gcc-quest/posts/`;
+    return `https://www.linkedin.com/company/india-biz-intel/posts/`;
   }
 
   /**

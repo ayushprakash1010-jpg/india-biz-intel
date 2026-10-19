@@ -60,7 +60,7 @@ export class PublisherCron {
     for (const post of readyPosts) {
       this.logger.log(`Publishing post ${post.id} (Draft: ${post.draftId})`);
       try {
-        let publishedUrl = `https://linkedin.com/posts/gcc-quest-${post.id}`;
+        let publishedUrl = `https://linkedin.com/posts/india-biz-intel-${post.id}`;
 
         if (post.draft.targetPlatform === 'LINKEDIN') {
           // Determine channel: 'buffer' = LinkedIn Company Page via Buffer API
@@ -75,10 +75,10 @@ export class PublisherCron {
             // Resolve image: article's own OG image or the auto-generated branded graphic
             const frontendUrl =
               this.configService.get<string>('FRONTEND_URL') ||
-              'https://gcc-quest-web.vercel.app';
+              'https://india-biz-intel-web.vercel.app';
             const imageUrl =
               post.draft.article?.imageUrl ||
-              `${frontendUrl}/api/og?title=${encodeURIComponent(post.draft.article?.title || 'GCC Quest')}&source=GCC+Quest`;
+              `${frontendUrl}/api/og?title=${encodeURIComponent(post.draft.article?.title || 'India BizIntel')}&source=India+BizIntel`;
             publishedUrl =
               (await this.bufferPublisher.publishToLinkedInCompanyPage(
                 post.draft.versions[0]?.content || '',
