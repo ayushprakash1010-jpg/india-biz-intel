@@ -260,4 +260,3 @@ describe('AnalysisProcessor (integration)', () => {
     });
   });
 });
-

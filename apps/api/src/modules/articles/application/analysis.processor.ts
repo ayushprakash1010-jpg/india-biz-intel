@@ -179,4 +179,3 @@ export class AnalysisProcessor extends WorkerHost {
     }
   }
 }
-

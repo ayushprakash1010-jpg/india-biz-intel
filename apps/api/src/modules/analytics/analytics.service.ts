@@ -333,4 +333,3 @@ export class AnalyticsService {
       .sort((a, b) => b.totalRuns - a.totalRuns);
   }
 }
-

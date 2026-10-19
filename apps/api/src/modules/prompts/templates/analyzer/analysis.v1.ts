@@ -23,9 +23,9 @@ MUST score 4 or below (NOT relevant):
 - Articles without a named company, person, or deal amount.
 - Pure opinion pieces with no factual corporate announcement.
 
-Title: \${vars.title}
-Text: \${vars.articleText}
-Trust Score: \${vars.trustScore}/10
+Title: ${vars.title}
+Text: ${vars.articleText}
+Trust Score: ${vars.trustScore}/10
 
 Please analyze this article and extract the required fields as specified by the JSON schema.
 For the "summary" field, write a rich, substantive 2 to 3 paragraph breakdown (separated by double newlines) explaining:
