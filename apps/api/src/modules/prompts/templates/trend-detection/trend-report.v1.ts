@@ -1,4 +1,4 @@
-﻿export const trendReportV1 = (vars: any) => `
+export const trendReportV1 = (vars: any) => `
 You are an expert India business analyst writing a high-level briefing for senior executives, investors, and consultants.
 Based on the following data, write an Executive Briefing on India corporate events.
 

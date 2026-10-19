@@ -1,4 +1,4 @@
-﻿-- CreateEnum
+-- CreateEnum
 CREATE TYPE "ArticleTopic" AS ENUM ('FUNDING', 'LEADERSHIP_CHANGE', 'ENTRY_IN_INDIA', 'EXPANSION', 'MERGERS_AND_ACQUISITION', 'GCC_SETUP', 'INDUSTRY_OUTLOOK');
 
 -- AlterTable articles: add topic column

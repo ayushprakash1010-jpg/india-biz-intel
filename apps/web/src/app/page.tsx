@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ArrowRight, Globe, Send, Network, Zap, TrendingUp, Users, Building2, DollarSign, Handshake, Briefcase } from "lucide-react";
 
 const TOPICS = [

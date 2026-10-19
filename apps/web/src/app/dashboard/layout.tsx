@@ -1,4 +1,4 @@
-﻿import { ReactNode } from "react";
+import { ReactNode } from "react";
 import { auth, signOut } from "../../../auth";
 import { redirect } from "next/navigation";
 import { SidebarNav } from "@/components/sidebar-nav";

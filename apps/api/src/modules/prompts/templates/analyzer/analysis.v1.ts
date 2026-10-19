@@ -1,4 +1,4 @@
-﻿export const analysisV1 = (vars: {
+export const analysisV1 = (vars: {
   title: string;
   articleText: string;
   trustScore: number;

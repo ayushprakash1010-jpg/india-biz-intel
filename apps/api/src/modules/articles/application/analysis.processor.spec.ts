@@ -1,4 +1,4 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AnalysisProcessor } from './analysis.processor';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';

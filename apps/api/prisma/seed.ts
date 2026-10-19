@@ -1,4 +1,4 @@
-﻿import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -85,7 +85,7 @@ async function main() {
   console.log('System settings seeded.');
 
   // 2. Admin User
-  const adminEmail = 'admin@gccquest.com';
+  const adminEmail = 'admin@indiabizintel.com';
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },
   });
