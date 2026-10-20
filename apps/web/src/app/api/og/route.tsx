@@ -45,43 +45,111 @@ export async function GET(req: NextRequest) {
           .reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0),
       ) % 1000000;
 
-    // Curated high-resolution, instant-loading Indian Business & Corporate imagery (100% free, 0ms rate limit)
+    // Curated high-resolution, topic-accurate Indian Business & Corporate imagery (100% verified, 0ms rate limit)
     const topicVisuals = {
-      funding: [
-        "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1080&q=80", // Modern stock market financial charts
-        "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1080&q=80", // High-tech investment analytics
-        "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1080&q=80", // Financial venture growth
+      pharma: [
+        "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=1080&q=80", // High-tech biotech laboratory research glassware
+        "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=1080&q=80", // Pharmaceutical clinical cleanroom & analysis
+      ],
+      ma: [
+        "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1080&q=80", // Executive handshake & corporate agreement in boardroom
+        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1080&q=80", // Skyscraper financial district towers
+      ],
+      retail_entry: [
+        "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1080&q=80", // Luxury modern retail store & commercial entrance
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1080&q=80", // Grand corporate glass atrium
+      ],
+      manufacturing: [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1080&q=80", // Advanced automated precision engineering plant
+        "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=1080&q=80", // Modern automotive assembly robotics
       ],
       cxo: [
-        "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=1080&q=80", // Executive glass boardroom skyline
-        "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=1080&q=80", // Sleek corporate boardroom
-        "https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=1080&q=80", // Modern corporate executive suite
+        "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=1080&q=80", // Executive glass boardroom overlooking cityscape
+        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=1080&q=80", // Corporate leadership in glass executive office
+      ],
+      funding: [
+        "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1080&q=80", // Illuminated stock market & financial analytics
+        "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1080&q=80", // Dynamic capital market trading charts
+        "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1080&q=80", // Venture capital growth & investment
       ],
       expansion: [
         "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1080&q=80", // Modern corporate glass towers
-        "https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1080&q=80", // Futuristic corporate glass facade
-        "https://images.unsplash.com/photo-1541888946425-d0fbb186f5f7?w=1080&q=80", // Cyber district skyline
+        "https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1080&q=80", // Futuristic corporate glass campus
       ],
-      tech: [
-        "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1080&q=80", // Software innovation team
-        "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1080&q=80", // Modern tech hub collaboration
-        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1080&q=80", // Ambient illuminated tech workstation
+      tech_gcc: [
+        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1080&q=80", // Enterprise tech engineering workstation
+        "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1080&q=80", // Global engineering capability collaboration
       ],
       general: [
-        "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1080&q=80", // Grand entrance innovation hub
-        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1080&q=80", // Sleek glass facade corporate park
+        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1080&q=80", // Sleek architectural skyscraper
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1080&q=80", // Modern glass innovation center
       ],
     };
 
     let fallbackUrl = "";
     if (
+      lowerTitle.includes("pharma") ||
+      lowerTitle.includes("biopharma") ||
+      lowerTitle.includes("biotech") ||
+      lowerTitle.includes("drug") ||
+      lowerTitle.includes("health") ||
+      lowerTitle.includes("hospital") ||
+      lowerTitle.includes("organon") ||
+      lowerTitle.includes("sun pharma") ||
+      lowerTitle.includes("medicine")
+    ) {
+      fallbackUrl = topicVisuals.pharma[seed % topicVisuals.pharma.length];
+    } else if (
+      lowerTitle.includes("acquire") ||
+      lowerTitle.includes("acquisition") ||
+      lowerTitle.includes("buyout") ||
+      lowerTitle.includes("merger") ||
+      lowerTitle.includes("m&a") ||
+      lowerTitle.includes("bought") ||
+      lowerTitle.includes("stake") ||
+      lowerTitle.includes("pact") ||
+      lowerTitle.includes("deal")
+    ) {
+      fallbackUrl = topicVisuals.ma[seed % topicVisuals.ma.length];
+    } else if (
+      lowerTitle.includes("enter") ||
+      lowerTitle.includes("enters") ||
+      lowerTitle.includes("entry") ||
+      lowerTitle.includes("flagship") ||
+      lowerTitle.includes("store") ||
+      lowerTitle.includes("retail") ||
+      lowerTitle.includes("fabletics") ||
+      lowerTitle.includes("launch")
+    ) {
+      fallbackUrl =
+        topicVisuals.retail_entry[seed % topicVisuals.retail_entry.length];
+    } else if (
+      lowerTitle.includes("cement") ||
+      lowerTitle.includes("steel") ||
+      lowerTitle.includes("plant") ||
+      lowerTitle.includes("factory") ||
+      lowerTitle.includes("manufacturing") ||
+      lowerTitle.includes("automotive") ||
+      lowerTitle.includes("car") ||
+      lowerTitle.includes("terminal") ||
+      lowerTitle.includes("cargo") ||
+      lowerTitle.includes("ultratech") ||
+      lowerTitle.includes("hyundai") ||
+      lowerTitle.includes("jindal")
+    ) {
+      fallbackUrl =
+        topicVisuals.manufacturing[seed % topicVisuals.manufacturing.length];
+    } else if (
       lowerTitle.includes("funding") ||
       lowerTitle.includes("raised") ||
       lowerTitle.includes("round") ||
       lowerTitle.includes("series") ||
       lowerTitle.includes("valuation") ||
       lowerTitle.includes("capital") ||
-      lowerTitle.includes("invest")
+      lowerTitle.includes("invest") ||
+      lowerTitle.includes("ipo") ||
+      lowerTitle.includes("anchor book") ||
+      lowerTitle.includes("bids")
     ) {
       fallbackUrl = topicVisuals.funding[seed % topicVisuals.funding.length];
     } else if (
@@ -91,32 +159,31 @@ export async function GET(req: NextRequest) {
       lowerTitle.includes("appoint") ||
       lowerTitle.includes("md") ||
       lowerTitle.includes("director") ||
-      lowerTitle.includes("managing")
+      lowerTitle.includes("managing") ||
+      lowerTitle.includes("steps down") ||
+      lowerTitle.includes("resigns") ||
+      lowerTitle.includes("successor") ||
+      lowerTitle.includes("tata")
     ) {
       fallbackUrl = topicVisuals.cxo[seed % topicVisuals.cxo.length];
     } else if (
+      lowerTitle.includes("gcc") ||
+      lowerTitle.includes("capability center") ||
+      lowerTitle.includes("jpmorgan") ||
+      lowerTitle.includes("r&d") ||
+      lowerTitle.includes("hires")
+    ) {
+      fallbackUrl = topicVisuals.tech_gcc[seed % topicVisuals.tech_gcc.length];
+    } else if (
       lowerTitle.includes("expansion") ||
-      lowerTitle.includes("plant") ||
+      lowerTitle.includes("expand") ||
       lowerTitle.includes("office") ||
       lowerTitle.includes("facility") ||
       lowerTitle.includes("capacity") ||
-      lowerTitle.includes("leasing") ||
-      lowerTitle.includes("hyderabad") ||
-      lowerTitle.includes("bengaluru") ||
-      lowerTitle.includes("bangalore") ||
-      lowerTitle.includes("mumbai") ||
-      lowerTitle.includes("noida")
+      lowerTitle.includes("leasing")
     ) {
       fallbackUrl =
         topicVisuals.expansion[seed % topicVisuals.expansion.length];
-    } else if (
-      lowerTitle.includes("ai") ||
-      lowerTitle.includes("tech") ||
-      lowerTitle.includes("software") ||
-      lowerTitle.includes("startup") ||
-      lowerTitle.includes("platform")
-    ) {
-      fallbackUrl = topicVisuals.tech[seed % topicVisuals.tech.length];
     } else {
       fallbackUrl = topicVisuals.general[seed % topicVisuals.general.length];
     }
