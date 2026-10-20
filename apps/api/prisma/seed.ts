@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+﻿import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -109,11 +109,34 @@ async function main() {
     console.log('Admin user already exists.');
   }
 
-  // 3. Initial 10 Targeted High-Quality Sources (Phase 1 Quick Wins)
+  // 3. High-Signal India Corporate Event Sources
+  // Removed GCC-quest/tech-only leftovers:
+  //   - Walmart Global Tech (India GCC) — GCC-specific corporate blog
+  //   - Economic Times GCC/Corporate — pointed to ET Tech sub-feed, not deals
+  //   - Business Standard Tech — tech sub-section RSS
+  //   - Moneycontrol Tech — tech sub-section RSS
+  //   - Analytics India Magazine — AI/ML tech, not corporate deals
+  //   - Economic Times CIO — security/CIO tech, not deal flow
+  //   - The Hindu BusinessLine Info-tech — tech sub-RSS, not companies
+  // Added high-signal corporate deal sources:
+  //   ET Corporate Deals, MC Business, BS Companies, BL Companies,
+  //   Entrackr, Inc42, YourStory, Google News targeted leadership/entry queries, NASSCOM
   const initialSources = [
+    // --- PRIMARY: Broad India corporate deal & company news ---
     {
-      name: 'Economic Times CIO',
-      url: 'https://ciso.economictimes.indiatimes.com/rss/topstories',
+      name: 'Economic Times — Corporate Deals',
+      url: 'https://economictimes.indiatimes.com/markets/deals/rssfeeds/22915373.cms',
+      type: 'RSS',
+      category: 'NEWS',
+      crawlFrequency: 'HOURLY',
+      trustScore: 9.5,
+      authorityScore: 9.5,
+      compositeScore: 9.5,
+      status: 'ACTIVE',
+    },
+    {
+      name: 'Moneycontrol Business',
+      url: 'https://www.moneycontrol.com/rss/business.xml',
       type: 'RSS',
       category: 'NEWS',
       crawlFrequency: 'HOURLY',
@@ -123,69 +146,14 @@ async function main() {
       status: 'ACTIVE',
     },
     {
-      name: 'Economic Times â€” GCC/Corporate',
-      url: 'https://economictimes.indiatimes.com/tech/rssfeeds.cms',
+      name: 'Business Standard — Companies',
+      url: 'https://www.business-standard.com/rss/companies-101.rss',
       type: 'RSS',
       category: 'NEWS',
       crawlFrequency: 'HOURLY',
       trustScore: 9.0,
       authorityScore: 9.0,
       compositeScore: 9.0,
-      status: 'ACTIVE',
-    },
-    {
-      name: 'YourStory',
-      url: 'https://yourstory.com/feed',
-      type: 'RSS',
-      category: 'NEWS',
-      crawlFrequency: 'HOURLY',
-      trustScore: 8.5,
-      authorityScore: 8.0,
-      compositeScore: 8.25,
-      status: 'ACTIVE',
-    },
-    {
-      name: 'Inc42',
-      url: 'https://inc42.com/feed/',
-      type: 'RSS',
-      category: 'NEWS',
-      crawlFrequency: 'HOURLY',
-      trustScore: 8.5,
-      authorityScore: 8.5,
-      compositeScore: 8.5,
-      status: 'ACTIVE',
-    },
-    {
-      name: 'Business Standard Tech',
-      url: 'https://www.business-standard.com/rss/technology-108.rss',
-      type: 'RSS',
-      category: 'NEWS',
-      crawlFrequency: 'HOURLY',
-      trustScore: 9.0,
-      authorityScore: 9.0,
-      compositeScore: 9.0,
-      status: 'ACTIVE',
-    },
-    {
-      name: 'Moneycontrol Tech',
-      url: 'https://www.moneycontrol.com/rss/technology.xml',
-      type: 'RSS',
-      category: 'NEWS',
-      crawlFrequency: 'HOURLY',
-      trustScore: 8.5,
-      authorityScore: 8.5,
-      compositeScore: 8.5,
-      status: 'ACTIVE',
-    },
-    {
-      name: 'Analytics India Magazine',
-      url: 'https://analyticsindiamag.com/feed/',
-      type: 'RSS',
-      category: 'NEWS',
-      crawlFrequency: 'HOURLY',
-      trustScore: 8.5,
-      authorityScore: 8.5,
-      compositeScore: 8.5,
       status: 'ACTIVE',
     },
     {
@@ -200,8 +168,8 @@ async function main() {
       status: 'ACTIVE',
     },
     {
-      name: 'The Hindu BusinessLine',
-      url: 'https://www.thehindubusinessline.com/info-tech/?service=rss',
+      name: 'The Hindu BusinessLine — Companies',
+      url: 'https://www.thehindubusinessline.com/companies/?service=rss',
       type: 'RSS',
       category: 'NEWS',
       crawlFrequency: 'HOURLY',
@@ -210,20 +178,78 @@ async function main() {
       compositeScore: 9.0,
       status: 'ACTIVE',
     },
+    // --- FUNDING / STARTUP DEALS ---
     {
-      name: 'Walmart Global Tech (India GCC)',
-      url: 'https://tech.walmart.com/',
-      type: 'WEB',
+      name: 'Inc42 — Startup Funding',
+      url: 'https://inc42.com/feed/',
+      type: 'RSS',
+      category: 'NEWS',
+      crawlFrequency: 'HOURLY',
+      trustScore: 8.5,
+      authorityScore: 8.5,
+      compositeScore: 8.5,
+      status: 'ACTIVE',
+    },
+    {
+      name: 'YourStory',
+      url: 'https://yourstory.com/feed',
+      type: 'RSS',
+      category: 'NEWS',
+      crawlFrequency: 'HOURLY',
+      trustScore: 8.5,
+      authorityScore: 8.0,
+      compositeScore: 8.25,
+      status: 'ACTIVE',
+    },
+    {
+      name: 'Entrackr — India Startups',
+      url: 'https://entrackr.com/feed/',
+      type: 'RSS',
+      category: 'NEWS',
+      crawlFrequency: 'HOURLY',
+      trustScore: 8.5,
+      authorityScore: 8.5,
+      compositeScore: 8.5,
+      status: 'ACTIVE',
+    },
+    // --- LEADERSHIP / MARKET ENTRY via targeted Google News RSS ---
+    {
+      name: 'India Leadership Changes — GNews',
+      url: 'https://news.google.com/rss/search?q=%22appointed+as+CEO%22+OR+%22new+CEO%22+OR+%22MD+appointed%22+OR+%22CXO+joins%22+India+company&hl=en-IN&gl=IN&ceid=IN:en',
+      type: 'RSS',
+      category: 'NEWS',
+      crawlFrequency: 'DAILY',
+      trustScore: 8.0,
+      authorityScore: 8.0,
+      compositeScore: 8.0,
+      status: 'ACTIVE',
+    },
+    {
+      name: 'India Market Entry — GNews',
+      url: 'https://news.google.com/rss/search?q=%22enters+India%22+OR+%22launches+in+India%22+OR+%22sets+up+India+office%22+global+company&hl=en-IN&gl=IN&ceid=IN:en',
+      type: 'RSS',
+      category: 'NEWS',
+      crawlFrequency: 'DAILY',
+      trustScore: 8.0,
+      authorityScore: 8.0,
+      compositeScore: 8.0,
+      status: 'ACTIVE',
+    },
+    // --- INDUSTRY OUTLOOK: Research firms only ---
+    {
+      name: 'NASSCOM Insights',
+      url: 'https://nasscom.in/knowledge-center/publications/rss',
+      type: 'RSS',
       category: 'RESEARCH',
       crawlFrequency: 'DAILY',
       trustScore: 9.5,
-      authorityScore: 9.0,
-      compositeScore: 9.25,
+      authorityScore: 9.5,
+      compositeScore: 9.5,
       status: 'ACTIVE',
     },
     {
       name: 'Women Founders & Funding',
-      url: 'https://news.google.com/rss/search?q="Women+founder"+OR+funding+OR+"women+led+startup"+OR+"women+backed+startup"',
+      url: 'https://news.google.com/rss/search?q=%22Women+founder%22+OR+funding+OR+%22women+led+startup%22+OR+%22women+backed+startup%22&hl=en-IN&gl=IN&ceid=IN:en',
       type: 'RSS',
       category: 'NEWS',
       crawlFrequency: 'HOURLY',
@@ -249,12 +275,14 @@ async function main() {
   if (!existingBrandVoice) {
     await prisma.brandVoice.create({
       data: {
-        name: 'GCC Quest Default',
-        description: 'Standard analytical and professional tone for GCC Quest',
+        name: 'India BizIntel Default',
+        description:
+          'Standard analytical and professional tone for India Business Intelligence',
         tone: 'Professional, analytical, forward-looking, and objective.',
         guidelines: [
           'Use clear business terminology without excessive jargon.',
-          'Focus on business impact, talent strategy, and technological innovation.',
+          'Focus on deal specifics: company names, deal sizes, headcount, geography, and strategic rationale.',
+          "Highlight implications for India's business ecosystem — investors, consultants, and corporate strategists.",
           'Maintain an objective, third-person perspective.',
         ],
         isDefault: true,
@@ -275,4 +303,3 @@ main()
     await prisma.$disconnect();
     process.exit(0);
   });
-

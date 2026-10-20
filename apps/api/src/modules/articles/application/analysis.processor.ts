@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -15,7 +15,7 @@ const analysisSchema = z.object({
   summary: z
     .string()
     .describe(
-      'A detailed 2-3 paragraph breakdown of the article covering the key event/announcement, strategic context, and implications for Indiaâ€™s GCC ecosystem',
+      'A detailed 2-3 paragraph breakdown of the article covering the key event/announcement, strategic context, and implications for IndiaÃ¢â‚¬â„¢s GCC ecosystem',
     ),
   sentiment: z
     .string()
@@ -102,7 +102,7 @@ export class AnalysisProcessor extends WorkerHost {
         articleText: safeText,
         trustScore: article.source.trustScore,
         gccTaxonomy:
-          'Expansion, Hiring, Strategy, Technology, Real Estate, Policy, M&A, Leadership, Regulatory',
+          'Funding, Leadership Change, Entry in India, Expansion, Mergers and Acquisition, GCC Setup, Industry Outlook',
       });
 
       // 3. Analyze via LLM with Observability
@@ -163,6 +163,40 @@ export class AnalysisProcessor extends WorkerHost {
         data: updateData,
       });
 
+      // 5b. INDUSTRY_OUTLOOK suppression guard:
+      // Only emit to content generation if the source is a known research firm.
+      // Prevents generic news articles mis-classified as INDUSTRY_OUTLOOK from
+      // flooding the pipeline and inflating that category further.
+      const knownResearchFirms = [
+        'BCG',
+        'Bain',
+        'Kearney',
+        'McKinsey',
+        'NASSCOM',
+        'Zinnov',
+        'JLL',
+        'CBRE',
+        'Deloitte',
+        'EY',
+        'PwC',
+      ];
+      const sourceIsResearchFirm = knownResearchFirms.some(
+        (firm) =>
+          (article.source?.name ?? '')
+            .toLowerCase()
+            .includes(firm.toLowerCase()) ||
+          (article.title ?? '').includes(firm),
+      );
+      if (
+        analysisResult.eventCategory === 'INDUSTRY_OUTLOOK' &&
+        !sourceIsResearchFirm
+      ) {
+        this.logger.warn(
+          `[INDUSTRY_OUTLOOK suppressed] Non-research source: ${article.title}`,
+        );
+        // Article is already marked ANALYZED above - skip content generation
+        return;
+      }
       // 6. Emit domain event for downstream processors (EmbeddingProcessor, ContentGenerationProcessor)
       this.eventEmitter.emit(DomainEvents.ARTICLE_ANALYZED, {
         articleId: article.id,

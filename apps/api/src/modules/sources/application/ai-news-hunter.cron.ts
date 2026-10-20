@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import { LlmService } from '../../llm/llm.service';
@@ -53,25 +53,29 @@ export class AiNewsHunterCron {
   private readonly rssParser = new Parser();
   private lastPollinationsTime = 0;
 
-  // 6 core India corporate event topics x 2 articles = ~12 per daily run
+  // 7 high-signal Google News RSS queries — one per topic — upgraded for specificity
+  // Each query is tuned to return named-company, named-deal articles rather than generic headlines
   private readonly targetTopics = [
-    // 1. Funding rounds - VC, PE, Series A/B/C, debt funding
-    'India startup company funding round investment 2026 Series',
+    // 1. FUNDING — named rounds with investor/amount signals
+    'India startup "Series A" OR "Series B" OR "Series C" OR "raised funding" OR "seed round" crore million 2026',
 
-    // 2. Leadership changes - C-suite appointments and exits
-    'India CEO CXO MD director appointment resignation leadership change 2026',
+    // 2. LEADERSHIP_CHANGE — C-suite titles, named companies
+    '"appointed as CEO" OR "new CEO" OR "MD appointed" OR "CXO joins" OR "Director appointed" India company 2026',
 
-    // 3. Global companies entering India for the first time
-    'global company entering India market launch first 2026',
+    // 3. ENTRY_IN_INDIA — global companies entering for first time
+    '"enters India" OR "launches in India" OR "India entry" OR "sets up India office" OR "forays into India" global company 2026',
 
-    // 4. Business expansion - new offices, headcount growth, new geographies
-    'India business expansion new office plant capacity headcount 2026',
+    // 4. EXPANSION — concrete geography or headcount expansion
+    'India company "opens office" OR "new facility" OR "expands operations" OR "adds headcount" OR "new plant" 2026',
 
-    // 5. Mergers & Acquisitions
-    'India merger acquisition deal buyout takeover 2026',
+    // 5. MERGERS_AND_ACQUISITION — named deal signals with India focus
+    'India company "acquires" OR "merger" OR "acquisition" OR "buyout" OR "stake purchase" crore million deal 2026',
 
-    // 6. GCC setup - Global Capability Center announcements in India
-    'Global Capability Center GCC India setup announcement new 2026',
+    // 6. GCC_SETUP — Global Capability Center specific
+    '"Global Capability Center" OR "GCC" India "sets up" OR "announces" OR "opens" OR "expands" multinational 2026',
+
+    // 7. INDUSTRY_OUTLOOK — research firms only (Gemini prompt caps at 1 per run)
+    'BCG OR Bain OR Kearney OR NASSCOM OR Zinnov India report outlook 2026',
   ];
 
   constructor(
@@ -449,7 +453,7 @@ export class AiNewsHunterCron {
 
       return ogImage;
     } catch {
-      // Gracefully swallow network/timeout errors — never fail article hunting
+      // Gracefully swallow network/timeout errors â€” never fail article hunting
       return null;
     }
   }
