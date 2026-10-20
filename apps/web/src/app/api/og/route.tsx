@@ -177,7 +177,7 @@ export async function GET(req: NextRequest) {
             right: 0,
             height: isSquare ? "460px" : "320px",
             background:
-              "linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0.95) 50%, rgba(0, 0, 0, 0.5) 80%, rgba(0, 0, 0, 0) 100%)",
+              "linear-gradient(180deg, rgba(7, 11, 25, 0.96) 0%, rgba(7, 11, 25, 0.88) 50%, rgba(7, 11, 25, 0.45) 80%, rgba(7, 11, 25, 0) 100%)",
           }}
         />
 
@@ -286,7 +286,7 @@ export async function GET(req: NextRequest) {
               alignItems: "center",
             }}
           >
-            gcc-quest.com
+            indiabizintel.com
           </div>
         </div>
       </div>,

@@ -7,6 +7,7 @@ import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUES } from '../../../infrastructure/queue/queue.constants';
 import * as Parser from 'rss-parser';
+import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
 const ARTICLE_TOPICS = [
@@ -50,6 +51,7 @@ const hunterResultSchema = z.object({
 export class AiNewsHunterCron {
   private readonly logger = new Logger(AiNewsHunterCron.name);
   private readonly rssParser = new Parser();
+  private lastPollinationsTime = 0;
 
   // 6 core India corporate event topics x 2 articles = ~12 per daily run
   private readonly targetTopics = [
@@ -284,10 +286,32 @@ export class AiNewsHunterCron {
               continue;
             }
 
-            // Generate OG Image Fallback
+            // 1. Safely extract real publisher/article image (e.g. CEO headshot or office photo)
+            let backgroundImageUrl = await this.extractOgImage(
+              extractedArticle.url,
+            );
+            if (backgroundImageUrl) {
+              this.logger.log(
+                `Extracted real article photo for "${extractedArticle.title}": ${backgroundImageUrl}`,
+              );
+            } else {
+              // 2. If no real photo was found, generate a tailored 3D conceptual visual in the background ($0 cost)
+              this.logger.log(
+                `No real photo found for "${extractedArticle.title}". Generating tailored 3D visual in background...`,
+              );
+              backgroundImageUrl = await this.generate3dVisualUrl(
+                extractedArticle.title,
+                extractedArticle.summary,
+                extractedArticle.topic,
+              );
+            }
+
+            // 3. Generate Branded OG Image URL (composited with real photo or 3D visual as bg)
             const baseUrl =
               process.env.FRONTEND_URL || 'https://india-biz-intel.vercel.app';
-            const imageUrl = `${baseUrl}/api/og?title=${encodeURIComponent(extractedArticle.title)}&source=${encodeURIComponent('India BizIntel Hunter')}`;
+            const imageUrl = backgroundImageUrl
+              ? `${baseUrl}/api/og?bg=${encodeURIComponent(backgroundImageUrl)}&title=${encodeURIComponent(extractedArticle.title)}&source=${encodeURIComponent('India BizIntel Hunter')}`
+              : `${baseUrl}/api/og?title=${encodeURIComponent(extractedArticle.title)}&source=${encodeURIComponent('India BizIntel Hunter')}`;
 
             // Save to DB
             const savedArticle = await this.prisma.article.create({
@@ -354,5 +378,237 @@ export class AiNewsHunterCron {
 
     const unionSize = set1.size + set2.size - intersectionSize;
     return intersectionSize / unionSize;
+  }
+
+  /**
+   * Safely attempts to extract the publisher's real article image (e.g. executive photo,
+   * corporate building, or official press visual) directly from the webpage OpenGraph tags.
+   * Fails fast (3.5s timeout) and gracefully returns null if unreachable or blocked.
+   */
+  private async extractOgImage(url: string): Promise<string | null> {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3500);
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          Accept:
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('text/html')) {
+        return null;
+      }
+
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      let ogImage =
+        $('meta[property="og:image"]').attr('content') ||
+        $('meta[name="twitter:image"]').attr('content') ||
+        $('meta[property="og:image:url"]').attr('content') ||
+        $('meta[name="twitter:image:src"]').attr('content');
+
+      if (!ogImage || typeof ogImage !== 'string') {
+        return null;
+      }
+
+      ogImage = ogImage.trim();
+
+      // Resolve relative URLs to absolute URLs
+      if (ogImage.startsWith('/') || !ogImage.startsWith('http')) {
+        try {
+          ogImage = new URL(ogImage, url).toString();
+        } catch {
+          return null;
+        }
+      }
+
+      // Filter out tracking pixels, icons, SVGs, or tiny spacer gifs
+      const lower = ogImage.toLowerCase();
+      if (
+        lower.endsWith('.svg') ||
+        lower.includes('favicon') ||
+        lower.includes('1x1') ||
+        lower.includes('pixel') ||
+        lower.includes('spacer') ||
+        lower.includes('logo-small')
+      ) {
+        return null;
+      }
+
+      return ogImage;
+    } catch {
+      // Gracefully swallow network/timeout errors — never fail article hunting
+      return null;
+    }
+  }
+
+  /**
+   * Generates a tailored 3D conceptual illustration prompt matching India BizIntel business topics,
+   * modeled after executive financial & corporate LinkedIn post styles.
+   */
+  private build3dPrompt(
+    title: string,
+    summary: string,
+    topic?: string,
+  ): string {
+    const combined = `${title} ${summary}`.toLowerCase();
+
+    // 1. Funding, VC, PE, Seed, Series A/B/C
+    if (
+      topic === 'FUNDING' ||
+      combined.includes('funding') ||
+      combined.includes('raised') ||
+      combined.includes('series a') ||
+      combined.includes('series b') ||
+      combined.includes('series c') ||
+      combined.includes('venture capital') ||
+      combined.includes('valuation')
+    ) {
+      return '3D render illustration of modern Indian startup investment and venture capital growth, glowing 3D financial charts and coins rising over Mumbai and Bangalore cyber tech hub, clean cinematic lighting, 8k';
+    }
+
+    // 2. Mergers, Acquisitions, Buyouts
+    if (
+      topic === 'MERGERS_AND_ACQUISITION' ||
+      combined.includes('merger') ||
+      combined.includes('acquisition') ||
+      combined.includes('buyout') ||
+      combined.includes('takeover') ||
+      combined.includes('deal')
+    ) {
+      return '3D render illustration of corporate merger and strategic partnership, modern glass skyscraper headquarters, glowing handshake and interconnected business networks, clean architectural 3D style, 8k';
+    }
+
+    // 3. Bilateral & Global Companies Entering India
+    if (
+      topic === 'ENTRY_IN_INDIA' ||
+      combined.includes('entering india') ||
+      combined.includes('market launch') ||
+      combined.includes('global company') ||
+      combined.includes('foreign investment')
+    ) {
+      if (combined.includes('german') || combined.includes('germany')) {
+        return '3D render illustration of German flag and Indian flag standing outside futuristic corporate glass headquarters, modern enterprise campus, clean cinematic lighting, 8k';
+      }
+      if (combined.includes('japan') || combined.includes('japanese')) {
+        return '3D render illustration of Japanese flag and Indian flag standing outside modern corporate tech park, sleek glass architecture, 8k';
+      }
+      if (
+        combined.includes('us ') ||
+        combined.includes('american') ||
+        combined.includes('united states')
+      ) {
+        return '3D render illustration of American flag and Indian flag standing outside modern glass enterprise innovation hub, architectural 3D visualization, 8k';
+      }
+      return '3D render illustration of international flags alongside the Indian flag standing outside a modern high-tech enterprise campus in India, architectural visualization, 8k';
+    }
+
+    // 4. Leadership & C-Suite Appointments
+    if (
+      topic === 'LEADERSHIP_CHANGE' ||
+      combined.includes('ceo') ||
+      combined.includes('cxo') ||
+      combined.includes('appoint') ||
+      combined.includes('managing director') ||
+      combined.includes('resignation')
+    ) {
+      return '3D render illustration of executive high-floor corporate boardroom in glass skyscraper, conference table, panoramic window view of modern metropolis, sleek corporate atmosphere, 8k';
+    }
+
+    // 5. Business Expansion, New Plant & Manufacturing
+    if (
+      topic === 'EXPANSION' ||
+      combined.includes('expansion') ||
+      combined.includes('plant') ||
+      combined.includes('factory') ||
+      combined.includes('manufacturing') ||
+      combined.includes('capacity') ||
+      combined.includes('facility')
+    ) {
+      return '3D render illustration of modern smart manufacturing plant and corporate enterprise campus in India, high-tech industrial architecture, bright daylight, 8k';
+    }
+
+    // 6. GCC Setup & Tech Hubs
+    if (
+      topic === 'GCC_SETUP' ||
+      combined.includes('gcc') ||
+      combined.includes('capability center') ||
+      combined.includes('hyderabad') ||
+      combined.includes('bengaluru')
+    ) {
+      return '3D render illustration of modern Indian financial cyber district with modern glass towers and glowing upward commercial growth arrow, architectural photography, 8k';
+    }
+
+    // Default General Indian Business Visual
+    return '3D render illustration of modern multinational enterprise innovation hub in India, sleek glass facade, landscaped corporate park, bright daylight, architectural 3D visualization, 8k';
+  }
+
+  /**
+   * Generates a unique 3D visual in the background for $0 and pre-caches it on CDN.
+   * Enforces a 45s safety delay between calls to respect free tier rate limits.
+   */
+  private async generate3dVisualUrl(
+    title: string,
+    summary: string,
+    topic?: string,
+  ): Promise<string | null> {
+    try {
+      // Respect Pollinations free rate limit (45 seconds between requests)
+      const now = Date.now();
+      const elapsed = now - this.lastPollinationsTime;
+      if (elapsed < 46000 && this.lastPollinationsTime > 0) {
+        const waitMs = 46000 - elapsed;
+        this.logger.log(
+          `Waiting ${(waitMs / 1000).toFixed(1)}s to respect free 3D visual rate limit...`,
+        );
+        await new Promise((r) => setTimeout(r, waitMs));
+      }
+
+      const promptText = this.build3dPrompt(title, summary, topic);
+      const seed =
+        Math.abs(
+          title
+            .split('')
+            .reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0),
+        ) % 1000000;
+
+      const encodedPrompt = encodeURIComponent(promptText);
+      const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1080&height=1080&model=turbo&seed=${seed}&nologo=true`;
+
+      // Pre-warm the cache on the CDN in the background
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 18000);
+
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      this.lastPollinationsTime = Date.now();
+
+      if (res.ok) {
+        this.logger.log(
+          `Generated tailored 3D conceptual visual for "${title}"`,
+        );
+        return url;
+      }
+
+      this.logger.warn(
+        `3D generation returned status ${res.status} for "${title}".`,
+      );
+      return null;
+    } catch (err: any) {
+      this.logger.warn(`Failed to generate 3D visual: ${err.message}`);
+      return null;
+    }
   }
 }
