@@ -124,8 +124,8 @@ async function main() {
   const initialSources = [
     // --- PRIMARY: Broad India corporate deal & company news ---
     {
-      name: 'Economic Times — Corporate Deals',
-      url: 'https://economictimes.indiatimes.com/markets/deals/rssfeeds/22915373.cms',
+      name: 'Economic Times - Corporate Deals',
+      url: 'https://economictimes.indiatimes.com/news/company/corporate-trends/rssfeeds/2143429.cms',
       type: 'RSS',
       category: 'NEWS',
       crawlFrequency: 'HOURLY',
@@ -202,8 +202,8 @@ async function main() {
       status: 'ACTIVE',
     },
     {
-      name: 'Entrackr — India Startups',
-      url: 'https://entrackr.com/feed/',
+      name: 'Entrackr - India Startups',
+      url: 'https://news.google.com/rss/search?q=site:entrackr.com+OR+%22Entrackr%22+funding+round&hl=en-IN&gl=IN&ceid=IN:en',
       type: 'RSS',
       category: 'NEWS',
       crawlFrequency: 'HOURLY',
@@ -238,7 +238,7 @@ async function main() {
     // --- INDUSTRY OUTLOOK: Research firms only ---
     {
       name: 'NASSCOM Insights',
-      url: 'https://nasscom.in/knowledge-center/publications/rss',
+      url: 'https://news.google.com/rss/search?q=%22NASSCOM%22+report+OR+outlook+OR+study+India&hl=en-IN&gl=IN&ceid=IN:en',
       type: 'RSS',
       category: 'RESEARCH',
       crawlFrequency: 'DAILY',

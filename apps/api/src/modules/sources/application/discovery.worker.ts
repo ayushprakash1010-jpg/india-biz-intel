@@ -72,7 +72,7 @@ export class DiscoveryWorker extends WorkerHost {
           // It's a new article, save it
           // Resolve imageUrl: composite extracted RSS image with brand overlay, or generate free AI visual
           const baseUrl =
-            process.env.FRONTEND_URL || 'https://gcc-quest-web.vercel.app';
+            process.env.FRONTEND_URL || 'https://india-biz-intel.vercel.app';
           let imageUrl = article.imageUrl || null;
           if (imageUrl) {
             imageUrl = `${baseUrl}/api/og?bg=${encodeURIComponent(imageUrl)}&title=${encodeURIComponent(article.title)}&source=${encodeURIComponent(source.name)}`;
