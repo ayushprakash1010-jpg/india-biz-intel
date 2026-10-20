@@ -11,7 +11,7 @@ STRICT GUIDELINES:
 3. Tagging (Blue Words): You MUST use the '@' symbol before company names, leaders, or sources so they can be natively tagged on LinkedIn.
 4. Facts & Figures: Highlight specific numbers prominently (headcount targets, experience, team size, growth percentages).
 5. Source: Include "Source: @[PublisherName]" on a new line before the Call to Action.
-6. Call to Action: Right before the hashtags, include: "Follow GCC Quest for exclusive updates, insights, and stories from the world of GCCs."
+6. Call to Action: Right before the hashtags, include: "Follow India BizIntel for daily corporate intelligence, deals, and market movements."
 7. Hashtags: Include 4-5 curated hashtags (e.g., #GCCTalent #Leadership #Hiring #FutureOfWork #GlobalCapabilityCenters).
 8. Emojis: Exactly 1 or 2 professional emojis (e.g., 👥, 🎯, or 🚀).
 

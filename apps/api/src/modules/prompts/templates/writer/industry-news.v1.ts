@@ -11,7 +11,7 @@ STRICT GUIDELINES:
 3. Tagging (Blue Words): You MUST use the '@' symbol before company names, government bodies, or news publishers (e.g., @Starbucks, @DigiKey, @Government of Tamil Nadu, @Reuters) so they can be natively tagged on LinkedIn.
 4. Facts & Figures: Highlight specific numbers prominently (e.g., headcount, square footage, investment amount, percentage metrics).
 5. Source Attribution: Always include "Source: @[PublisherName]" on a new line after the final paragraph and before the Call to Action.
-6. Call to Action: Right before the hashtags, you MUST include this exact sentence in italic format or plain text: "Follow GCC Quest for exclusive updates, insights, and stories from the world of GCCs."
+6. Call to Action: Right before the hashtags, you MUST include this exact sentence in italic format or plain text: "Follow India BizIntel for daily corporate intelligence, deals, and market movements."
 7. Hashtags: Include 4-5 curated, highly relevant hashtags at the bottom (e.g., #GCC #IndiaTech #[CityName] #GlobalCapabilityCenters).
 8. Emojis: Use exactly 1 or 2 subtle professional emojis (e.g., 🏢, 🚀, or 📊) to accent key points.
 

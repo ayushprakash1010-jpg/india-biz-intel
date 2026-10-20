@@ -9,7 +9,7 @@ STRICT GUIDELINES:
    - Paragraph 3 (Strategic Interpretation): Explain what these findings mean for GCC CXOs, operational roadmaps, or talent budgeting for the coming year.
    - Paragraph 4 (Executive Reflection Prompt): Pose a challenging question to leaders regarding how their organization measures up against these benchmarks.
 3. Source & Tagging: Clearly cite the research firm or report source (e.g., @NASSCOM, @Zinnov, @JLL).
-4. Call to Action: Right before the hashtags, include: "Follow GCC Quest for exclusive updates, insights, and stories from the world of GCCs."
+4. Call to Action: Right before the hashtags, include: "Follow India BizIntel for daily corporate intelligence, deals, and market movements."
 5. Hashtags: Include 4-5 relevant hashtags (e.g., #GCCResearch #MarketInsights #GCCLeadership #EnterpriseData #GlobalCapabilityCenters).
 6. Emojis: Use 1 or 2 professional emojis (e.g., 📊, 📈, or 💡).
 
