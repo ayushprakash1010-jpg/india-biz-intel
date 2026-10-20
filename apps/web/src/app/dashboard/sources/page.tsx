@@ -153,7 +153,8 @@ export default function SourcesPage() {
             Sources Dashboard
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage your RSS and Web sources for GCC discovery.
+            Manage your RSS and Web sources for India business intelligence
+            discovery.
           </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

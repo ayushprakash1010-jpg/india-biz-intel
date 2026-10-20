@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from "@/lib/api/api-client";
 import {
   Search,
   ExternalLink,
@@ -105,12 +105,14 @@ export default function ArticlesPage() {
   const fetchArticles = async (query?: string) => {
     try {
       setLoading(true);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-      let url = `${apiUrl}/api/v1/articles`;
-      if (query)
-        url = `${apiUrl}/api/v1/articles/search?q=${encodeURIComponent(query)}`;
-      const res = await axios.get(url);
-      setArticles(res.data.items || res.data || []);
+      let url = "/articles?take=100";
+      if (query) {
+        url = `/articles/search?q=${encodeURIComponent(query)}&take=100`;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res: any = await apiClient.get(url);
+      const items = res?.data?.items || res?.items || res?.data || res || [];
+      setArticles(Array.isArray(items) ? items : []);
     } catch (error) {
       console.error("Failed to fetch articles", error);
     } finally {
@@ -129,8 +131,7 @@ export default function ArticlesPage() {
 
   const handleSkip = async (id: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-      await axios.post(`${apiUrl}/api/v1/articles/${id}/skip`);
+      await apiClient.post(`/articles/${id}/skip`);
       setArticles(
         articles.map((a) => (a.id === id ? { ...a, status: "SKIPPED" } : a)),
       );
@@ -141,8 +142,7 @@ export default function ArticlesPage() {
 
   const handleAnalyze = async (id: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-      await axios.post(`${apiUrl}/api/v1/articles/${id}/analyze`);
+      await apiClient.post(`/articles/${id}/analyze`);
       setArticles(
         articles.map((a) => (a.id === id ? { ...a, status: "ANALYZED" } : a)),
       );

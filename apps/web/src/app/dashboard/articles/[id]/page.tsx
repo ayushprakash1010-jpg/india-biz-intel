@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import axios from "axios";
+import apiClient from "@/lib/api/api-client";
 import {
   ArrowLeft,
   ExternalLink,
@@ -35,9 +35,9 @@ export default function ArticleDetailPage() {
   const fetchArticle = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-      const res = await axios.get(`${apiUrl}/api/v1/articles/${params.id}`);
-      setArticle(res.data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res: any = await apiClient.get(`/articles/${params.id}`);
+      setArticle(res?.data || res);
     } catch (error) {
       console.error("Failed to fetch article", error);
     } finally {
