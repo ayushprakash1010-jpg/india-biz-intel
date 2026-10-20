@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
-import { GCC_QUEST_LOGO_DATA_URI } from "@/lib/logo-data-uri";
 
 export const runtime = "edge";
 
@@ -9,7 +8,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
 
     // Extract query parameters
-    const title = searchParams.get("title") || "GCC Industry Updates";
+    const title = searchParams.get("title") || "India Corporate Intelligence";
     const source = searchParams.get("source") || "India BizIntel Insights";
     const customH1 = searchParams.get("h1");
     const customH2 = searchParams.get("h2");
@@ -220,7 +219,7 @@ export async function GET(req: NextRequest) {
           }}
         />
 
-        {/* 3. Top Header: Official India BizIntel Logo */}
+        {/* 3. Top Header: Official India BizIntel Brand Lockup */}
         <div
           style={{
             position: "absolute",
@@ -231,16 +230,69 @@ export async function GET(req: NextRequest) {
             zIndex: 10,
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={GCC_QUEST_LOGO_DATA_URI}
-            alt="India BizIntel"
+          {/* Logo Badge: Vibrant Orange-to-Rose gradient with IB */}
+          <div
             style={{
-              width: isSquare ? 320 : 260,
-              height: isSquare ? 90 : 75,
-              objectFit: "contain",
+              width: isSquare ? 56 : 46,
+              height: isSquare ? 56 : 46,
+              borderRadius: isSquare ? 12 : 10,
+              background: "linear-gradient(135deg, #f97316 0%, #e11d48 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 8px 24px rgba(249, 115, 22, 0.45)",
+              border: "1.5px solid rgba(255, 255, 255, 0.25)",
+              marginRight: isSquare ? 16 : 14,
             }}
-          />
+          >
+            <span
+              style={{
+                color: "#ffffff",
+                fontWeight: 900,
+                fontSize: isSquare ? 28 : 22,
+                letterSpacing: -1,
+                fontFamily: "sans-serif",
+              }}
+            >
+              IB
+            </span>
+          </div>
+
+          {/* Brand Wordmark & Tagline */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <span
+              style={{
+                color: "#ffffff",
+                fontWeight: 900,
+                fontSize: isSquare ? 32 : 26,
+                letterSpacing: -0.5,
+                lineHeight: 1.1,
+                fontFamily: "sans-serif",
+                textShadow: "0 2px 8px rgba(0, 0, 0, 0.8)",
+              }}
+            >
+              India BizIntel
+            </span>
+            <span
+              style={{
+                color: "#f97316",
+                fontWeight: 700,
+                fontSize: isSquare ? 12 : 10,
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                marginTop: 3,
+                fontFamily: "sans-serif",
+                textShadow: "0 1px 4px rgba(0, 0, 0, 0.8)",
+              }}
+            >
+              Corporate Intelligence
+            </span>
+          </div>
         </div>
 
         {/* 4. Dual-Tone Bold Headline in Upper Quadrant */}
