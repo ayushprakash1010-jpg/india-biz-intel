@@ -18,9 +18,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   ComposedChart,
 } from "recharts";
 import {
@@ -38,15 +35,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Activity, Brain, CheckCircle, Database, FileText } from "lucide-react";
 
 import { ElementType } from "react";
-
-const COLORS = [
-  "#0ea5e9",
-  "#8b5cf6",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#64748b",
-];
 
 interface StatCardProps {
   title: string;
@@ -99,7 +87,8 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
           <p className="text-muted-foreground mt-2">
-            Comprehensive performance and intelligence metrics.
+            India BizIntel intelligence metrics - topic coverage, source health,
+            and AI usage.
           </p>
         </div>
         <Tabs
@@ -184,39 +173,107 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Categories Donut */}
+        {/* Topic Health */}
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>GCC Categories</CardTitle>
-            <CardDescription>Distribution of analyzed articles</CardDescription>
+            <CardTitle>Topic Health</CardTitle>
+            <CardDescription>
+              Event category distribution vs. manager targets
+            </CardDescription>
           </CardHeader>
-          <CardContent className="h-[350px] flex justify-center items-center">
+          <CardContent>
             {loadingCategories ? (
-              <Skeleton className="h-[300px] w-[300px] rounded-full" />
+              <Skeleton className="h-64 w-full" />
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categories}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={120}
-                    paddingAngle={5}
-                    dataKey="count"
-                    nameKey="category"
-                  >
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {categories?.map((entry: any, index: number) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="space-y-3">
+                {(() => {
+                  const targets: Record<string, number> = {
+                    FUNDING: 20,
+                    EXPANSION: 15,
+                    MERGERS_AND_ACQUISITION: 15,
+                    LEADERSHIP_CHANGE: 15,
+                    GCC_SETUP: 15,
+                    ENTRY_IN_INDIA: 10,
+                    INDUSTRY_OUTLOOK: 10,
+                  };
+                  const colorMap: Record<string, string> = {
+                    FUNDING: "#10b981",
+                    EXPANSION: "#0ea5e9",
+                    MERGERS_AND_ACQUISITION: "#8b5cf6",
+                    LEADERSHIP_CHANGE: "#f59e0b",
+                    GCC_SETUP: "#ec4899",
+                    ENTRY_IN_INDIA: "#06b6d4",
+                    INDUSTRY_OUTLOOK: "#64748b",
+                  };
+                  const labelMap: Record<string, string> = {
+                    FUNDING: "Funding",
+                    EXPANSION: "Expansion",
+                    MERGERS_AND_ACQUISITION: "M&A",
+                    LEADERSHIP_CHANGE: "Leadership",
+                    GCC_SETUP: "GCC Setup",
+                    ENTRY_IN_INDIA: "Entry in India",
+                    INDUSTRY_OUTLOOK: "Industry Outlook",
+                  };
+                  const ORDER = [
+                    "FUNDING",
+                    "EXPANSION",
+                    "MERGERS_AND_ACQUISITION",
+                    "LEADERSHIP_CHANGE",
+                    "GCC_SETUP",
+                    "ENTRY_IN_INDIA",
+                    "INDUSTRY_OUTLOOK",
+                  ];
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const total =
+                    (categories ?? []).reduce(
+                      (s: number, c: any) => s + c.count,
+                      0,
+                    ) || 1;
+                  return ORDER.map((key) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const row = (categories ?? []).find(
+                      (c: any) => c.category === key,
+                    );
+                    const count = row?.count ?? 0;
+                    const pct = Math.round((count / total) * 100);
+                    const target = targets[key] ?? 10;
+                    const isHealthy = pct >= Math.round(target * 0.6);
+                    const color = colorMap[key] ?? "#64748b";
+                    const barWidth = Math.min(
+                      Math.round((pct / target) * 100),
+                      100,
+                    );
+                    return (
+                      <div key={key}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="font-medium">{labelMap[key]}</span>
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            <span
+                              className={
+                                isHealthy
+                                  ? "text-emerald-400 font-semibold"
+                                  : "text-rose-400 font-semibold"
+                              }
+                            >
+                              {pct}%
+                            </span>
+                            <span>target {target}%</span>
+                            <span className="text-foreground/60">
+                              {count} art.
+                            </span>
+                          </span>
+                        </div>
+                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${barWidth}%`, background: color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -331,7 +388,10 @@ export default function AnalyticsPage() {
         <div className="lg:col-span-7 grid md:grid-cols-2 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>Source Yield</CardTitle>
+              <CardTitle>Source Health</CardTitle>
+              <CardDescription>
+                Articles ingested, trust score & last crawl per source
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {loadingSources ? (
@@ -341,19 +401,50 @@ export default function AnalyticsPage() {
                   <table className="w-full text-sm text-left">
                     <thead className="text-xs uppercase bg-muted">
                       <tr>
-                        <th className="px-6 py-3">Source Name</th>
-                        <th className="px-6 py-3">Articles</th>
-                        <th className="px-6 py-3">Composite Score</th>
+                        <th className="px-4 py-3">Source</th>
+                        <th className="px-4 py-3">Articles</th>
+                        <th className="px-4 py-3">Score</th>
+                        <th className="px-4 py-3">Last Crawled</th>
+                        <th className="px-4 py-3">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {sources?.slice(0, 8).map((s: any) => (
-                        <tr key={s.id} className="border-b border-border/50">
-                          <td className="px-6 py-4 font-medium">{s.name}</td>
-                          <td className="px-6 py-4">{s.articlesCount}</td>
-                          <td className="px-6 py-4">
-                            {(s.compositeScore * 10).toFixed(1)}/10
+                      {sources?.slice(0, 10).map((s: any) => (
+                        <tr
+                          key={s.id}
+                          className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                        >
+                          <td
+                            className="px-4 py-3 font-medium max-w-[160px] truncate"
+                            title={s.name}
+                          >
+                            {s.name}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-emerald-400">
+                            {s.articlesCount}
+                          </td>
+                          <td className="px-4 py-3">
+                            {(s.compositeScore ?? 0).toFixed(1)}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs">
+                            {s.lastCrawled
+                              ? new Date(s.lastCrawled).toLocaleDateString(
+                                  "en-IN",
+                                  { day: "2-digit", month: "short" },
+                                )
+                              : "Never"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                s.status === "ACTIVE"
+                                  ? "bg-emerald-500/15 text-emerald-400"
+                                  : "bg-rose-500/15 text-rose-400"
+                              }`}
+                            >
+                              {s.status}
+                            </span>
                           </td>
                         </tr>
                       ))}

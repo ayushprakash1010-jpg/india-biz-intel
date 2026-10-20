@@ -77,6 +77,20 @@ export class AiNewsHunterCron {
     // 7. INDUSTRY_OUTLOOK — research firms only (Gemini prompt caps at 1 per run)
     'BCG OR Bain OR Kearney OR NASSCOM OR Zinnov India report outlook 2026',
   ];
+  // Daily per-topic ingestion quota — prevents any single topic from dominating the DB.
+  // INDUSTRY_OUTLOOK is capped at 1 to stop it inflating to 24%+ of all articles.
+  private readonly topicQuota: Record<string, number> = {
+    FUNDING: 3,
+    LEADERSHIP_CHANGE: 3,
+    ENTRY_IN_INDIA: 3,
+    EXPANSION: 2,
+    MERGERS_AND_ACQUISITION: 3,
+    GCC_SETUP: 3,
+    INDUSTRY_OUTLOOK: 1,
+  };
+
+  // Runtime counter — reset each hunter run
+  private topicCount: Record<string, number> = {};
 
   constructor(
     private readonly prisma: PrismaService,
@@ -89,6 +103,8 @@ export class AiNewsHunterCron {
   @Cron('0 8 * * *', { timeZone: 'Asia/Kolkata' })
   async runNewsHunter(): Promise<void> {
     this.logger.log('Starting India BizIntel News Hunter...');
+    // Reset per-topic counters for this run
+    this.topicCount = {};
 
     // 1. Ensure we have an "India BizIntel Hunter" source in the DB
     let source = await this.prisma.source.findFirst({
@@ -310,6 +326,17 @@ export class AiNewsHunterCron {
               );
             }
 
+            // Quota guard: skip if this topic has hit its daily limit
+            const topicKey = extractedArticle.topic;
+            const currentCount = this.topicCount[topicKey] ?? 0;
+            const quota = this.topicQuota[topicKey] ?? 2;
+            if (currentCount >= quota) {
+              this.logger.log(
+                `[Quota] Skipping "${extractedArticle.title}" — ${topicKey} quota (${quota}) reached for today.`,
+              );
+              continue;
+            }
+
             // 3. Generate Branded OG Image URL (composited with real photo or 3D visual as bg)
             const baseUrl =
               process.env.FRONTEND_URL || 'https://india-biz-intel.vercel.app';
@@ -335,6 +362,9 @@ export class AiNewsHunterCron {
             this.logger.log(
               `Successfully hunted and saved: ${savedArticle.title} [${extractedArticle.topic}]`,
             );
+            // Increment per-topic counter
+            this.topicCount[extractedArticle.topic] =
+              (this.topicCount[extractedArticle.topic] ?? 0) + 1;
 
             // Keep in-memory deduplication cache up-to-date for subsequent topics
             existingUrls.add(savedArticle.externalUrl);
