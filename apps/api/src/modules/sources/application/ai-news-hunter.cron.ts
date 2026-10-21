@@ -100,7 +100,8 @@ export class AiNewsHunterCron {
   ) {}
 
   // Run every day at 8:00 AM IST
-  @Cron('0 8 * * *', { timeZone: 'Asia/Kolkata' })
+  // Run every day at 7:30 AM IST — 30 minutes before 8 AM crawl to avoid Gemini RPM collision
+  @Cron('30 7 * * *', { timeZone: 'Asia/Kolkata' })
   async runNewsHunter(): Promise<void> {
     this.logger.log('Starting India BizIntel News Hunter...');
     // Reset per-topic counters for this run
@@ -108,15 +109,22 @@ export class AiNewsHunterCron {
 
     // 1. Ensure we have an "India BizIntel Hunter" source in the DB
     let source = await this.prisma.source.findFirst({
-      where: { name: 'India BizIntel Hunter' },
+      where: {
+        OR: [
+          { name: 'India BizIntel Hunter' },
+          { url: 'https://news.google.com/india-biz-intel' },
+        ],
+      },
     });
 
     if (!source) {
-      source = await this.prisma.source.create({
-        data: {
+      source = await this.prisma.source.upsert({
+        where: { url: 'https://news.google.com/india-biz-intel' },
+        update: { name: 'India BizIntel Hunter', status: 'ACTIVE' },
+        create: {
           name: 'India BizIntel Hunter',
           type: 'RSS',
-          url: 'https://news.google.com',
+          url: 'https://news.google.com/india-biz-intel',
           status: 'ACTIVE',
           category: 'NEWS',
         },

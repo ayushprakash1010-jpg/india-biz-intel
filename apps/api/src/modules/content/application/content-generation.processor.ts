@@ -52,12 +52,15 @@ export class ContentGenerationProcessor {
 
       // 1. Rule Check: threshold (HIGH-06: cached, avoids DB hit on every article)
       const threshold = parseFloat(
-        await this.settingsCache.get('config.analysis_threshold', '7'),
+        await this.settingsCache.get('config.analysis_threshold', '8'),
       );
 
       // AI News Hunter articles are pre-filtered by Gemini for quality,
       // so we skip the impact score threshold to ensure they always get a draft.
-      const isAiHunted = (article as any).source?.name === 'AI News Hunter';
+      const isAiHunted =
+        (article as any).source?.name === 'India BizIntel Hunter' ||
+        (article as any).source?.name === 'AI News Hunter' ||
+        (article as any).source?.name === 'GCC Quest AI';
 
       if (!isAiHunted && article.analysis.impactScore < threshold) {
         this.logger.log(
