@@ -102,8 +102,8 @@ export class AiNewsHunterCron {
   // Run every day at 8:00 AM IST
   // Run every day at 7:30 AM IST — 30 minutes before 8 AM crawl to avoid Gemini RPM collision
   // Run every day at 7:30 AM IST — 30 minutes before 8 AM crawl to avoid Gemini RPM collision
-  // Scheduled for 9:30 AM IST for testing
-  @Cron('30 9 * * *', { timeZone: 'Asia/Kolkata' })
+  // Run every day at 9:45 AM IST — 15 mins after 9:30 AM crawler run to avoid Gemini RPM collision
+  @Cron('45 9 * * *', { timeZone: 'Asia/Kolkata' })
   async runNewsHunter(): Promise<void> {
     this.logger.log('Starting India BizIntel News Hunter...');
     // Reset per-topic counters for this run
