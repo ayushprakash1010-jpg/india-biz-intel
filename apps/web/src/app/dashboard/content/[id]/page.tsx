@@ -70,6 +70,27 @@ interface Draft {
   versions: Version[];
 }
 
+const ARCHETYPE_CONFIG: Record<
+  string,
+  { label: string; icon: string; activeColor: string }
+> = {
+  "CXO Brief": {
+    label: "CXO Brief",
+    icon: "⚡",
+    activeColor: "bg-emerald-600 text-white shadow-sm",
+  },
+  "Deal Memo": {
+    label: "Deal Memo",
+    icon: "📊",
+    activeColor: "bg-blue-600 text-white shadow-sm",
+  },
+  "Contrarian Take": {
+    label: "Contrarian Take",
+    icon: "💡",
+    activeColor: "bg-amber-600 text-white shadow-sm",
+  },
+};
+
 // Maps entity category keys to display labels and icons
 const ENTITY_CATEGORIES: Record<
   string,
@@ -644,28 +665,37 @@ export default function DraftReviewPage({
 
               {/* Version pills if > 1 version */}
               {draft.versions && draft.versions.length > 1 && (
-                <div className="flex items-center gap-2 mt-3 pt-2 border-t border-zinc-100">
+                <div className="flex items-center gap-2 mt-3 pt-2 border-t border-zinc-100 flex-wrap">
                   <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Versions:
+                    Archetypes:
                   </span>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {draft.versions.map((v, i) => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => {
-                          setActiveVariant(i);
-                          setEditedText(v.content);
-                        }}
-                        className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-                          activeVariant === i
-                            ? "bg-zinc-900 text-white"
-                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                        }`}
-                      >
-                        v{v.versionNumber} ({v.generatedBy})
-                      </button>
-                    ))}
+                  <div className="flex gap-2 flex-wrap">
+                    {draft.versions.map((v, i) => {
+                      const config = ARCHETYPE_CONFIG[v.generatedBy];
+                      const isActive = activeVariant === i;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveVariant(i);
+                            setEditedText(v.content);
+                          }}
+                          className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+                            isActive
+                              ? config?.activeColor ||
+                                "bg-zinc-900 text-white shadow-sm"
+                              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200/60"
+                          }`}
+                        >
+                          <span>{config?.icon || "📝"}</span>
+                          <span>
+                            {config?.label ||
+                              `v${v.versionNumber} (${v.generatedBy})`}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

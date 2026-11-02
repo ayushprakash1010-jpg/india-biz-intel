@@ -10,10 +10,34 @@ import { ContentRepository } from '../infrastructure/content.repository';
 import { DomainEvents } from '@gcc-quest/shared-types';
 import { z } from 'zod';
 
+const draftVariantSchema = z.object({
+  archetype: z
+    .enum(['CXO Brief', 'Deal Memo', 'Contrarian Take'])
+    .describe(
+      'The archetype name: "CXO Brief" for Variant 1, "Deal Memo" for Variant 2, or "Contrarian Take" for Variant 3',
+    ),
+  content: z
+    .string()
+    .describe(
+      'The complete, highly formatted LinkedIn post text ready to publish',
+    ),
+});
+
 const draftsSchema = z.object({
   variants: z
-    .array(z.string())
-    .describe('Array of exactly 2 different post drafts'),
+    .array(
+      z.union([
+        draftVariantSchema,
+        z.object({
+          content: z.string(),
+          archetype: z.string().optional(),
+        }),
+        z.string(),
+      ]),
+    )
+    .describe(
+      'Array of exactly 3 distinct post drafts matching the 3 required archetypes: [CXO Brief, Deal Memo, Contrarian Take]',
+    ),
 });
 
 @Injectable()

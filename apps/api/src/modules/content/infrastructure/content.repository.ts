@@ -11,14 +11,27 @@ export class ContentRepository {
     trendId?: string;
     brandVoiceId?: string;
     targetPlatform: string;
-    versions: string[];
+    versions: Array<string | { content: string; archetype?: string }>;
     promptKey?: string;
     promptVersion?: string;
   }) {
-    const validVersions = (data.versions || []).filter(
-      (v) => v && v.trim().length > 0,
-    );
-    if (validVersions.length === 0) {
+    const defaultArchetypes = ['CXO Brief', 'Deal Memo', 'Contrarian Take'];
+    const normalized = (data.versions || [])
+      .map((item, idx) => {
+        if (typeof item === 'string') {
+          return {
+            content: item,
+            archetype: defaultArchetypes[idx] || `v${idx + 1}`,
+          };
+        }
+        return {
+          content: item.content,
+          archetype: item.archetype || defaultArchetypes[idx] || `v${idx + 1}`,
+        };
+      })
+      .filter((v) => v.content && v.content.trim().length > 0);
+
+    if (normalized.length === 0) {
       throw new Error(
         'Cannot create a ContentDraft without at least one valid version.',
       );
@@ -33,12 +46,12 @@ export class ContentRepository {
         targetPlatform: data.targetPlatform,
         currentVersion: 1, // Start with version 1 which will be the first one
         versions: {
-          create: validVersions.map((content, idx) => ({
+          create: normalized.map((item, idx) => ({
             versionNumber: idx + 1,
-            content,
+            content: item.content,
             promptKey: data.promptKey,
             promptVersion: data.promptVersion,
-            generatedBy: 'AI',
+            generatedBy: item.archetype,
           })),
         },
       },
