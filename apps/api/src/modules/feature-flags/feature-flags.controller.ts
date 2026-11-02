@@ -7,17 +7,34 @@ import { UserRole } from '@gcc-quest/shared-types';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
 @Controller('admin/feature-flags')
 export class FeatureFlagsController {
   constructor(private featureFlagsService: FeatureFlagsService) {}
 
+  @Get('thresholds')
+  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  async getThresholds() {
+    return this.featureFlagsService.getThresholds();
+  }
+
+  @Put('thresholds')
+  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  async updateThresholds(
+    @Body() body: { analysisThreshold?: number; hunterThreshold?: number },
+    @CurrentUser() user: any,
+  ) {
+    await this.featureFlagsService.setThresholds(body, user.id);
+    return { success: true, ...body };
+  }
+
   @Get()
+  @Roles(UserRole.ADMIN)
   async getAllFlags() {
     return this.featureFlagsService.getAllFlags();
   }
 
   @Put(':key')
+  @Roles(UserRole.ADMIN)
   async toggleFlag(
     @Param('key') key: string,
     @Body('value') value: boolean,

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { SettingsCacheService } from '../../common/cache/settings-cache.service';
 
 @Injectable()
 export class FeatureFlagsService {
@@ -9,7 +10,10 @@ export class FeatureFlagsService {
   // For Sprint 1, we fetch from DB or memory cache.
   private cache: Record<string, { value: boolean; expiresAt: number }> = {};
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private settingsCache: SettingsCacheService,
+  ) {}
 
   async isEnabled(flag: string): Promise<boolean> {
     const now = Date.now();
@@ -58,5 +62,71 @@ export class FeatureFlagsService {
       },
       {} as Record<string, boolean>,
     );
+  }
+
+  async getThresholds(): Promise<{
+    analysisThreshold: number;
+    hunterThreshold: number;
+  }> {
+    const [analysisSetting, hunterSetting] = await Promise.all([
+      this.prisma.systemSetting.findUnique({
+        where: { key: 'config.analysis_threshold' },
+      }),
+      this.prisma.systemSetting.findUnique({
+        where: { key: 'config.hunter_threshold' },
+      }),
+    ]);
+
+    return {
+      analysisThreshold: analysisSetting
+        ? parseFloat(analysisSetting.value)
+        : 8.5,
+      hunterThreshold: hunterSetting ? parseFloat(hunterSetting.value) : 7.0,
+    };
+  }
+
+  async setThresholds(
+    thresholds: { analysisThreshold?: number; hunterThreshold?: number },
+    userId?: string,
+  ): Promise<void> {
+    if (thresholds.analysisThreshold !== undefined) {
+      await this.prisma.systemSetting.upsert({
+        where: { key: 'config.analysis_threshold' },
+        update: {
+          value: thresholds.analysisThreshold.toString(),
+          updatedBy: userId,
+        },
+        create: {
+          key: 'config.analysis_threshold',
+          value: thresholds.analysisThreshold.toString(),
+          description: 'Min businessImpact to trigger generation',
+          updatedBy: userId,
+        },
+      });
+      this.settingsCache.invalidate('config.analysis_threshold');
+      this.logger.log(
+        `Analysis threshold updated to ${thresholds.analysisThreshold}`,
+      );
+    }
+
+    if (thresholds.hunterThreshold !== undefined) {
+      await this.prisma.systemSetting.upsert({
+        where: { key: 'config.hunter_threshold' },
+        update: {
+          value: thresholds.hunterThreshold.toString(),
+          updatedBy: userId,
+        },
+        create: {
+          key: 'config.hunter_threshold',
+          value: thresholds.hunterThreshold.toString(),
+          description: 'Min businessImpact for AI Hunter to trigger generation',
+          updatedBy: userId,
+        },
+      });
+      this.settingsCache.invalidate('config.hunter_threshold');
+      this.logger.log(
+        `Hunter threshold updated to ${thresholds.hunterThreshold}`,
+      );
+    }
   }
 }

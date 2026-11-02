@@ -7,21 +7,32 @@ export const analysisV1 = (vars: {
 You are an expert industry analyst specializing in India corporate events for business professionals, investors, and consultants.
 Your task is to analyze the following article and extract structured metadata.
 
-CRITICAL SCORING RULE — to score 7 or above, the article MUST directly cover at least one of:
-1. Funding: A named company (Indian or India-operating) closing a funding round with deal size or investor named.
-2. Leadership Change: A named C-suite executive (CEO, CXO, MD, Director) appointed or departing from a named company.
-3. Entry in India: A global company officially entering the Indian market for the first time (launch, JV, new entity).
-4. Expansion: A company expanding India operations — new city, new office, significant headcount growth, new plant or facility.
-5. Mergers & Acquisitions: A named merger, acquisition, buyout, or stake purchase involving an India-operating entity.
-6. GCC Setup: A multinational setting up or significantly expanding a Global Capability Center in India.
-7. Industry Outlook: A research report from BCG, Bain, Kearney, McKinsey, NASSCOM, Zinnov, JLL, or CBRE with India focus.
+STRICT IMPACT SCORING GUIDELINES (1 to 10):
+Default to 5.5 - 6.5 for ordinary corporate mentions. Be very selective and conservative with high scores:
 
-MUST score 4 or below (NOT relevant):
-- Generic global AI product launches with no India corporate action.
-- General stock market, mutual fund, IPO, or retail investment news (no named deal).
-- Celebrity, sports, lifestyle, or political content.
-- Articles without a named company, person, or deal amount.
-- Pure opinion pieces with no factual corporate announcement.
+Score 8.5 - 10 (CRITICAL TIER 1 - High-Value Corporate Intelligence):
+Only assign 8.5 or higher if the article meets at least one of these high-impact conditions:
+1. Funding: Significant funding round (> ₹100 Cr / $12M+) with named lead investors (e.g., Peak XV, Tiger Global, SoftBank, Accel, Temasek).
+2. Leadership: Top-tier C-suite transition (CEO, MD, Chairperson) at a major enterprise, listed firm, or prominent unicorn.
+3. Entry in India: Major global/multinational brand officially entering India with concrete local investment or entity setup.
+4. Expansion / GCC: Substantial facility, plant, or GCC setup with 500+ headcount or significant capital expenditure (> ₹100 Cr).
+5. M&A: High-value acquisition, controlling stake buyout, or landmark merger with named financial terms.
+
+Score 7.0 - 8.4 (TIER 2 - Notable Business Developments):
+- Early-stage / seed funding rounds (< ₹100 Cr).
+- Secondary leadership appointments (VP, SVP, Business Unit Head) or appointments at smaller startups.
+- Routine office leasing, incremental regional expansion, or mid-sized hiring drives.
+- Authoritative industry research reports from BCG, Bain, McKinsey, NASSCOM, or Zinnov.
+
+Score 5.0 - 6.9 (TIER 3 - Incremental or Routine Business Activity):
+- Minor business updates, routine quarterly earnings comments without major announcements, product feature rollouts.
+
+MUST score 4.0 or below (DISCARD - Not Actionable Intelligence):
+- Generic global AI/tech product announcements without specific India corporate operations.
+- General stock market, daily indices movements, mutual fund or retail trading commentary.
+- Celebrity, sports, lifestyle, political, or general crime news.
+- Articles lacking a specific named company, executive, or verifiable deal figure.
+- Pure opinion pieces, editorial commentary, or advertorials.
 
 Title: ${vars.title}
 Text: ${vars.articleText}

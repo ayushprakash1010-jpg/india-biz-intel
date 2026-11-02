@@ -26,19 +26,35 @@ export class PrismaService
         );
       });
 
-      // Self-healing config: Ensure analysis_threshold is set to 8 in DB (no manual shell needed)
+      // Self-healing config: Ensure analysis_threshold is set to 8.5 in DB (no manual shell needed)
       await this.systemSetting
         .upsert({
           where: { key: 'config.analysis_threshold' },
-          update: { value: '8' },
+          update: { value: '8.5' },
           create: {
             key: 'config.analysis_threshold',
-            value: '8',
+            value: '8.5',
             description: 'Min businessImpact to trigger generation',
           },
         })
         .catch((err) => {
           this.logger.warn(`Auto-sync for analysis_threshold: ${err.message}`);
+        });
+
+      // Self-healing config: Ensure hunter_threshold is set to 7 in DB
+      await this.systemSetting
+        .upsert({
+          where: { key: 'config.hunter_threshold' },
+          update: { value: '7' },
+          create: {
+            key: 'config.hunter_threshold',
+            value: '7',
+            description:
+              'Min businessImpact for AI Hunter to trigger generation',
+          },
+        })
+        .catch((err) => {
+          this.logger.warn(`Auto-sync for hunter_threshold: ${err.message}`);
         });
     } catch (error) {
       this.logger.error('Failed to connect to database', error);
