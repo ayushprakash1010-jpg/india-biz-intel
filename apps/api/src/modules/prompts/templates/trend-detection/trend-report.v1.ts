@@ -16,4 +16,6 @@ Structure your report strictly as follows:
 - **Strategic Implications:** (Why this matters to business leaders — covering Funding activity, Leadership transitions, Market Entry signals, Expansion momentum, M&A deal flow, or GCC ecosystem growth)
 - **Key Companies & Sectors Involved:** (List the main entities, sectors, and geographies driving this trend)
 - **Confidence & Corroboration:** (Briefly state the level of consensus across the provided sources from MoneyControl, Economic Times, Business Standard, and industry reports)
+
+IMPORTANT: Avoid vague phrases like "broader trend", "broader shift", or "underscores the growing". Be specific — name the exact pattern, cite data points, and reference concrete examples.
 `;

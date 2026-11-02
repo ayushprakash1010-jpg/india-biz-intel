@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import apiClient from "@/lib/api/api-client";
 import {
   Search,
@@ -97,15 +98,21 @@ function TopicBadge({ topic }: { topic: string }) {
 }
 
 export default function ArticlesPage() {
+  const searchParams = useSearchParams();
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTopic, setActiveTopic] = useState("ALL");
+  const [activeTopic, setActiveTopic] = useState(
+    searchParams.get("topic") || "ALL",
+  );
 
-  const fetchArticles = async (query?: string) => {
+  const fetchArticles = async (query?: string, topic?: string) => {
     try {
       setLoading(true);
       let url = "/articles?take=100";
+      if (topic && topic !== "ALL") {
+        url += `&topic=${encodeURIComponent(topic)}`;
+      }
       if (query) {
         url = `/articles/search?q=${encodeURIComponent(query)}&take=100`;
       }
@@ -121,12 +128,12 @@ export default function ArticlesPage() {
   };
 
   useEffect(() => {
-    fetchArticles();
-  }, []);
+    fetchArticles(undefined, activeTopic);
+  }, [activeTopic]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchArticles(searchQuery);
+    fetchArticles(searchQuery, activeTopic);
   };
 
   const handleSkip = async (id: string) => {
@@ -151,15 +158,8 @@ export default function ArticlesPage() {
     }
   };
 
-  // Client-side topic filter
-  const filtered =
-    activeTopic === "ALL"
-      ? articles
-      : articles.filter(
-          (a) =>
-            a.topic === activeTopic ||
-            a.analysis?.eventCategory === activeTopic,
-        );
+  // Articles are now server-side filtered by topic
+  const filtered = articles;
 
   return (
     <div className="p-6 space-y-6">
@@ -194,7 +194,7 @@ export default function ArticlesPage() {
             variant="ghost"
             onClick={() => {
               setSearchQuery("");
-              fetchArticles();
+              fetchArticles(undefined, activeTopic);
             }}
           >
             Clear

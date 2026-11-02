@@ -73,6 +73,22 @@ export class AnalyticsService {
     const approvalRate =
       postsGenerated > 0 ? (approvedCount / postsGenerated) * 100 : 0;
 
+    // Topic breakdown: count articles per topic from ArticleAnalysis.eventCategory
+    const topicCounts = await this.prisma.articleAnalysis.groupBy({
+      by: ['eventCategory'],
+      _count: { eventCategory: true },
+      where: {
+        article: { discoveredAt: { gte: after } },
+      },
+    });
+
+    const topicBreakdown: Record<string, number> = {};
+    for (const tc of topicCounts) {
+      if (tc.eventCategory) {
+        topicBreakdown[tc.eventCategory] = tc._count.eventCategory;
+      }
+    }
+
     return {
       totalArticles,
       postsGenerated,
@@ -80,6 +96,7 @@ export class AnalyticsService {
       sourcesActive,
       postsScheduled,
       pendingReview,
+      topicBreakdown,
     };
   }
 

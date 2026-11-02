@@ -7,6 +7,8 @@ import { thoughtLeadershipV1 } from '../templates/writer/thought-leadership.v1';
 import { researchV1 } from '../templates/writer/research.v1';
 import { storyClusterV1 } from '../templates/writer/story-cluster.v1';
 import { trendReportV1 } from '../templates/trend-detection/trend-report.v1';
+import { fundingV1 } from '../templates/writer/funding.v1';
+import { mergerAcquisitionV1 } from '../templates/writer/merger-acquisition.v1';
 
 export const PROMPT_REGISTRY: Record<string, PromptTemplate> = {
   'article-analysis': {
@@ -38,6 +40,16 @@ export const PROMPT_REGISTRY: Record<string, PromptTemplate> = {
     key: 'writer-research',
     description: 'Summarizes deep analytical GCC research reports',
     versions: [{ version: 'v1', render: researchV1 }],
+  },
+  'writer-funding': {
+    key: 'writer-funding',
+    description: 'Writes a post about funding rounds and investment deals',
+    versions: [{ version: 'v1', render: fundingV1 }],
+  },
+  'writer-merger-acquisition': {
+    key: 'writer-merger-acquisition',
+    description: 'Writes a post about mergers, acquisitions, and buyouts',
+    versions: [{ version: 'v1', render: mergerAcquisitionV1 }],
   },
   'writer-story-cluster': {
     key: 'writer-story-cluster',

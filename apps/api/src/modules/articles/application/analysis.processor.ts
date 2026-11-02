@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -144,6 +144,25 @@ export class AnalysisProcessor extends WorkerHost {
 
       // 5. Update Article Status (and enrich imageUrl with punchy headline if available)
       const updateData: any = { status: 'ANALYZED' };
+
+      // Sync topic field on Article from the analysis eventCategory
+      // so topic filtering works directly on the Article model
+      const validTopics = [
+        'FUNDING',
+        'LEADERSHIP_CHANGE',
+        'ENTRY_IN_INDIA',
+        'EXPANSION',
+        'MERGERS_AND_ACQUISITION',
+        'GCC_SETUP',
+        'INDUSTRY_OUTLOOK',
+      ];
+      if (
+        analysisResult.eventCategory &&
+        validTopics.includes(analysisResult.eventCategory)
+      ) {
+        updateData.topic = analysisResult.eventCategory;
+      }
+
       if (
         analysisResult.headline?.h1 &&
         analysisResult.headline?.h2 &&

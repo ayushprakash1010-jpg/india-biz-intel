@@ -126,7 +126,7 @@ async function runQA() {
     if (analysis) {
       analysisFound = true;
       assert(analysis.summary.length > 10, 'Summary is empty');
-      assert(analysis.gccCategory, 'Category is missing');
+      assert(analysis.eventCategory, 'Category is missing');
       break;
     }
     await sleep(3000);

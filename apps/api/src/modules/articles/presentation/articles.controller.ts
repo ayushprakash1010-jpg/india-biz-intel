@@ -18,12 +18,14 @@ export class ArticlesController {
     @Query('take') take?: string,
     @Query('sourceId') sourceId?: string,
     @Query('status') status?: ArticleStatus,
+    @Query('topic') topic?: string,
   ) {
     return this.articleRepository.findMany({
       skip: skip ? parseInt(skip, 10) : 0,
       take: take ? parseInt(take, 10) : 20,
       sourceId,
       status,
+      topic,
     });
   }
 

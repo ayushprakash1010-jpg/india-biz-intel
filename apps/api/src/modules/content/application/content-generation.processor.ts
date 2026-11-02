@@ -102,6 +102,25 @@ export class ContentGenerationProcessor {
         category.includes('data')
       ) {
         promptKey = 'writer-research';
+      } else if (
+        category.includes('funding') ||
+        category.includes('investment') ||
+        category.includes('fundrais')
+      ) {
+        promptKey = 'writer-funding';
+      } else if (
+        category.includes('merger') ||
+        category.includes('acquisition') ||
+        category.includes('m&a') ||
+        category.includes('buyout') ||
+        category.includes('stake')
+      ) {
+        promptKey = 'writer-merger-acquisition';
+      } else if (
+        category.includes('gcc') ||
+        category.includes('capability center')
+      ) {
+        promptKey = 'writer-expansion';
       }
 
       const promptVersion = this.promptService.getActive(promptKey);

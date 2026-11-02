@@ -31,7 +31,9 @@ Please analyze this article and extract the required fields as specified by the 
 For the "summary" field, write a rich, substantive 2 to 3 paragraph breakdown (separated by double newlines) explaining:
 1. The core event — company name, deal amount, people involved, location, and specific numbers.
 2. The strategic context and business rationale behind this move.
-3. The broader implications for the India business ecosystem.
+3. The specific implications for the India business ecosystem — name comparable events, cite relevant market data, or reference specific industry dynamics.
+
+IMPORTANT: Do NOT use the phrases "broader trend", "broader shift", "broader pattern", "broader implications", "underscores the growing", or any similar vague generalizations. Be concrete and specific in your analysis.
 
 For the "headline" field, provide a punchy 2-part graphic headline for social imagery:
 - "h1": 1-3 word subject (e.g., "Zomato", "McKinsey India", "SoftBank")

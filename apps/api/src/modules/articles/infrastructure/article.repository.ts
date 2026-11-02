@@ -11,11 +11,16 @@ export class ArticleRepository {
     take?: number;
     sourceId?: string;
     status?: ArticleStatus;
+    topic?: string;
   }) {
-    const { skip = 0, take = 20, sourceId, status } = params;
+    const { skip = 0, take = 20, sourceId, status, topic } = params;
     const where: any = {};
     if (sourceId) where.sourceId = sourceId;
     if (status) where.status = status;
+    if (topic) {
+      // Filter by the article's own topic field OR by analysis.eventCategory
+      where.OR = [{ topic: topic }, { analysis: { eventCategory: topic } }];
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.article.findMany({
@@ -23,7 +28,10 @@ export class ArticleRepository {
         skip,
         take,
         orderBy: { publishedAt: 'desc' },
-        include: { source: { select: { name: true } } },
+        include: {
+          source: { select: { name: true } },
+          analysis: { select: { eventCategory: true, impactScore: true } },
+        },
       }),
       this.prisma.article.count({ where }),
     ]);

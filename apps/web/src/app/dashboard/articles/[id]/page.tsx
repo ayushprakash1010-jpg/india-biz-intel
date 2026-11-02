@@ -13,9 +13,16 @@ import {
   MapPin,
   Cpu,
   RefreshCcw,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Card,
   CardContent,
@@ -92,9 +99,25 @@ export default function ArticleDetailPage() {
             <span className="flex items-center gap-1">
               <Hash className="h-4 w-4 text-zinc-500" />
               {article.source.name}
-              <span className="text-xs text-zinc-600 ml-1">
-                (Score: {article.source.compositeScore})
-              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span className="text-xs text-zinc-600 ml-1 inline-flex items-center gap-0.5 cursor-help">
+                      (Score: {article.source.compositeScore})
+                      <HelpCircle className="h-3 w-3 text-zinc-600" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="font-semibold mb-1">Source Composite Score</p>
+                    <p>
+                      A 0-1 reliability rating combining trust score (editorial
+                      credibility), authority score (domain reputation), and
+                      freshness score (recency of crawls). Higher = more
+                      reliable source.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </span>
           )}
           {article.publishedAt && (
@@ -162,8 +185,27 @@ export default function ArticleDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <div className="text-xs text-zinc-500 mb-1">
+                  <div className="text-xs text-zinc-500 mb-1 flex items-center gap-1">
                     Business Impact
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-3 w-3 text-zinc-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-semibold mb-1">
+                            Business Impact Score (1-10)
+                          </p>
+                          <p>
+                            AI-assessed relevance score based on: named
+                            companies/deals, specific figures (deal size,
+                            headcount), strategic significance, and India
+                            corporate ecosystem relevance. Articles scoring ≥8
+                            auto-generate LinkedIn posts.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <div className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-amber-500" />
@@ -174,12 +216,14 @@ export default function ArticleDetailPage() {
                 </div>
 
                 <div>
-                  <div className="text-xs text-zinc-500 mb-1">GCC Category</div>
+                  <div className="text-xs text-zinc-500 mb-1">
+                    Event Category
+                  </div>
                   <Badge
                     variant="secondary"
                     className="bg-blue-500/10 text-blue-400 border-blue-500/20"
                   >
-                    {analysis.gccCategory}
+                    {analysis.eventCategory}
                   </Badge>
                 </div>
 
