@@ -236,7 +236,7 @@ export default function ContentQueuePage() {
                 return (
                   <Card
                     key={draft.id}
-                    className="flex flex-col hover:border-primary/50 hover:shadow-md transition-all duration-200"
+                    className="flex flex-col bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:shadow-md transition-all duration-200"
                   >
                     <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-semibold leading-snug line-clamp-2 pr-2 flex-1">
@@ -313,7 +313,10 @@ export default function ContentQueuePage() {
                         href={`/dashboard/content/${draft.id}`}
                         className="w-full"
                       >
-                        <Button className="w-full group" variant="outline">
+                        <Button
+                          className="w-full group border-zinc-700 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-100 hover:text-white font-medium"
+                          variant="outline"
+                        >
                           Review Draft
                           <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
                         </Button>

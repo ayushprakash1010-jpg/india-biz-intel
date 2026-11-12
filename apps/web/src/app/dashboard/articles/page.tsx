@@ -89,7 +89,7 @@ function TopicBadge({ topic }: { topic: string }) {
   const Icon = cfg.icon;
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.bg} ${cfg.color} ${cfg.border}`}
+      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cfg.bg} ${cfg.color} ${cfg.border}`}
     >
       <Icon className="w-3 h-3" />
       {cfg.label}
@@ -97,8 +97,30 @@ function TopicBadge({ topic }: { topic: string }) {
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const normalized = (status || "").toUpperCase();
+  const styles: Record<string, string> = {
+    ANALYZED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    DISCOVERED: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    SKIPPED: "bg-zinc-800/80 text-zinc-400 border-zinc-700",
+    GENERATED: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+    FAILED: "bg-rose-500/10 text-rose-400 border-rose-500/30",
+  };
+  const badgeClass =
+    styles[normalized] || "bg-zinc-800 text-zinc-300 border-zinc-700";
+
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${badgeClass} whitespace-nowrap`}
+    >
+      {normalized}
+    </span>
+  );
+}
+
 export default function ArticlesPage() {
   const searchParams = useSearchParams();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -158,36 +180,42 @@ export default function ArticlesPage() {
     }
   };
 
-  // Articles are now server-side filtered by topic
-  const filtered = articles;
+  const filtered = articles.filter((article) => {
+    if (activeTopic === "ALL") return true;
+    const category = article.topic || article.analysis?.eventCategory;
+    return category === activeTopic;
+  });
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
-            Article Inbox
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Review and classify discovered India business news.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-white">
+          Article Inbox
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Review and classify discovered India business news.
+        </p>
       </div>
 
-      {/* Search */}
+      {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-4 items-center">
         <div className="relative flex-1 max-w-2xl">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
           <Input
             type="search"
             placeholder="Search articles..."
-            className="pl-8 bg-zinc-900 border-zinc-800"
+            className="pl-8 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button type="submit">Search</Button>
+        <Button
+          type="submit"
+          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
+        >
+          Search
+        </Button>
         {searchQuery && (
           <Button
             type="button"
@@ -208,7 +236,7 @@ export default function ArticlesPage() {
           onClick={() => setActiveTopic("ALL")}
           className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
             activeTopic === "ALL"
-              ? "bg-white text-gray-950 border-white"
+              ? "bg-gradient-to-r from-orange-600 to-rose-600 text-white border-transparent shadow-sm"
               : "bg-transparent text-gray-400 border-gray-700 hover:border-gray-500 hover:text-gray-200"
           }`}
         >
@@ -257,7 +285,7 @@ export default function ArticlesPage() {
       {/* Article list */}
       <div className="space-y-4">
         {loading ? (
-          <p className="text-white">Loading articles...</p>
+          <p className="text-zinc-400">Loading articles...</p>
         ) : filtered.length === 0 ? (
           <p className="text-muted-foreground">
             No articles found for this topic.
@@ -284,9 +312,7 @@ export default function ArticlesPage() {
                         topic={article.topic || article.analysis?.eventCategory}
                       />
                     )}
-                    <Badge variant="outline" className="whitespace-nowrap">
-                      {article.status}
-                    </Badge>
+                    <StatusBadge status={article.status} />
                   </div>
                 </div>
 
@@ -311,20 +337,29 @@ export default function ArticlesPage() {
                     href={article.externalUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 text-primary hover:underline"
+                    className="flex items-center gap-1 text-orange-400 hover:underline"
                   >
                     <ExternalLink className="h-3 w-3" /> Original Source
                   </a>
                 </div>
               </div>
 
-              <div className="flex md:flex-col gap-2 min-w-[120px]">
-                <Link href={`/dashboard/articles/${article.id}`}>
-                  <Button size="sm">View Details</Button>
+              <div className="flex md:flex-col gap-2 min-w-[125px] w-full md:w-auto">
+                <Link
+                  href={`/dashboard/articles/${article.id}`}
+                  className="w-full"
+                >
+                  <Button
+                    size="sm"
+                    className="w-full bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-500 hover:to-rose-500 text-white font-medium shadow-sm border-0"
+                  >
+                    View Details
+                  </Button>
                 </Link>
                 <Button
                   size="sm"
                   variant="outline"
+                  className="w-full border-zinc-700 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 hover:text-white"
                   onClick={() => handleAnalyze(article.id)}
                 >
                   Analyze Now
@@ -332,6 +367,7 @@ export default function ArticlesPage() {
                 <Button
                   size="sm"
                   variant="outline"
+                  className="w-full border-zinc-800 bg-zinc-900/60 hover:bg-zinc-850 text-zinc-400 hover:text-zinc-200"
                   onClick={() => handleSkip(article.id)}
                 >
                   Skip

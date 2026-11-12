@@ -10,13 +10,13 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
         outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border border-zinc-700 bg-zinc-900/60 text-zinc-200 hover:bg-zinc-800 hover:text-white aria-expanded:bg-zinc-800 aria-expanded:text-white dark:border-zinc-700 dark:bg-zinc-900/60 dark:hover:bg-zinc-800 dark:text-zinc-200 dark:hover:text-white",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "text-zinc-300 hover:bg-zinc-800/60 hover:text-white aria-expanded:bg-zinc-800 aria-expanded:text-white dark:hover:bg-zinc-800/60 dark:text-zinc-300 dark:hover:text-white",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+          "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 focus-visible:border-rose-500/40 focus-visible:ring-rose-500/20 dark:bg-rose-500/20 dark:hover:bg-rose-500/30",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
