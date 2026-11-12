@@ -72,11 +72,12 @@ export class PublisherCron {
             this.logger.log(
               `Publishing to LinkedIn Company Page via webhook (post ${post.id})...`,
             );
-            // Resolve image: article's own OG image or the auto-generated branded graphic
+            // Resolve image: user custom override > article OG image > auto-generated branded graphic
             const frontendUrl =
               this.configService.get<string>('FRONTEND_URL') ||
               'https://india-biz-intel-web.vercel.app';
             const imageUrl =
+              (post.draft as any).customImageUrl ||
               post.draft.article?.imageUrl ||
               `${frontendUrl}/api/og?title=${encodeURIComponent(post.draft.article?.title || 'India BizIntel')}&source=India+BizIntel`;
             publishedUrl =

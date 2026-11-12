@@ -235,6 +235,7 @@ model ContentDraft {
   updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   clusterId      String?           @map("cluster_id") @db.Uuid
   trendId        String?           @map("trend_id") @db.Uuid
+  customImageUrl String?           @map("custom_image_url")
   article        Article?          @relation(fields: [articleId], references: [id], onDelete: Cascade)
   topic          ContentTopic?     @relation(fields: [topicId], references: [id], onDelete: Cascade)
   brandVoice     BrandVoice?       @relation(fields: [brandVoiceId], references: [id])

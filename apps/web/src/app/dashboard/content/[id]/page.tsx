@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,13 @@ import {
   Zap,
   CheckCircle2,
   ImageIcon,
+  Upload,
+  Link2,
+  RotateCcw,
+  X,
+  Loader2,
+  Shuffle,
+  BarChart3,
 } from "lucide-react";
 
 // LOW-05: Strict TypeScript interfaces
@@ -68,6 +75,7 @@ interface Draft {
   targetPlatform: string;
   status: string;
   versions: Version[];
+  customImageUrl?: string;
 }
 
 const ARCHETYPE_CONFIG: Record<
@@ -232,6 +240,17 @@ export default function DraftReviewPage({
   >("personal");
   const [isBufferConfigured, setIsBufferConfigured] = useState(false);
 
+  // Image replacement state
+  const [customImageUrl, setCustomImageUrl] = useState<string>("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [isGeneratingInfographic, setIsGeneratingInfographic] = useState(false);
+  const [isShufflingImage, setIsShufflingImage] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlInputValue, setUrlInputValue] = useState("");
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     async function fetchDraft() {
       try {
@@ -241,6 +260,10 @@ export default function DraftReviewPage({
         // Load the latest version into the editor
         if (data.versions && data.versions.length > 0) {
           setEditedText(data.versions[0].content);
+        }
+        // Load custom image if previously set
+        if (data.customImageUrl) {
+          setCustomImageUrl(data.customImageUrl);
         }
       } catch (err) {
         console.error(err);
@@ -257,6 +280,298 @@ export default function DraftReviewPage({
     fetchDraft();
     fetchSettings();
   }, [id]);
+
+  // Resolve image: custom override > article OG > auto-generated
+  const resolvedImageUrl = customImageUrl || draft?.article?.imageUrl || null;
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files are allowed");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok) {
+        throw new Error(uploadData.error || "Upload failed");
+      }
+
+      setCustomImageUrl(uploadData.url);
+      await apiClient.put(`/content/drafts/${id}/image`, {
+        customImageUrl: uploadData.url,
+      });
+      toast.success("Image uploaded and saved!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handlePasteUrl = async () => {
+    const url = urlInputValue.trim();
+    if (!url) {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+    try {
+      new URL(url); // Validate URL format
+    } catch {
+      toast.error("Invalid URL format");
+      return;
+    }
+
+    try {
+      setCustomImageUrl(url);
+      await apiClient.put(`/content/drafts/${id}/image`, {
+        customImageUrl: url,
+      });
+      toast.success("Image URL saved!");
+      setShowUrlInput(false);
+      setUrlInputValue("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save image URL");
+    }
+  };
+
+  const handleGenerateAi = async () => {
+    if (!draft) return;
+    setIsGeneratingAi(true);
+    const toastId = toast.loading(
+      "Generating tailored 3D graphic with AI (takes ~8-12s)...",
+    );
+    try {
+      let h1 = "";
+      let h2 = "";
+      if (
+        draft.article?.imageUrl &&
+        draft.article.imageUrl.includes("/api/og")
+      ) {
+        try {
+          const u = new URL(draft.article.imageUrl);
+          h1 = u.searchParams.get("h1") || "";
+          h2 = u.searchParams.get("h2") || "";
+        } catch {}
+      }
+
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title:
+            draft.article?.title ||
+            draft.cluster?.theme ||
+            "India Corporate Intelligence",
+          summary:
+            draft.article?.analysis?.summary ||
+            draft.cluster?.synthesisText ||
+            draft.versions?.[0]?.content ||
+            "",
+          source: draft.targetPlatform || "India BizIntel AI",
+          h1,
+          h2,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Generation failed");
+      }
+
+      setCustomImageUrl(data.url);
+      await apiClient.put(`/content/drafts/${id}/image`, {
+        customImageUrl: data.url,
+      });
+
+      if (data.engine === "curated-stock") {
+        toast.success("Curated high-res topic visual created and saved!", {
+          id: toastId,
+        });
+      } else {
+        toast.success("AI 3D visual generated and saved!", { id: toastId });
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      const msg =
+        err instanceof Error ? err.message : "Failed to generate AI visual";
+      toast.error(msg, { id: toastId });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+  const handleShuffleImage = async () => {
+    if (!draft) return;
+    setIsShufflingImage(true);
+    try {
+      const newSeed = Math.floor(Math.random() * 1000000);
+      const baseOg = draft.article?.imageUrl || "";
+      let newUrl = "";
+      if (baseOg && baseOg.includes("/api/og")) {
+        const u = new URL(baseOg);
+        u.searchParams.set("seed", newSeed.toString());
+        u.searchParams.delete("bg");
+        newUrl = u.toString();
+      } else {
+        const title =
+          draft.article?.title || draft.cluster?.theme || "India BizIntel";
+        newUrl = `/api/og?title=${encodeURIComponent(title)}&seed=${newSeed}`;
+      }
+
+      setCustomImageUrl(newUrl);
+      await apiClient.put(`/content/drafts/${id}/image`, {
+        customImageUrl: newUrl,
+      });
+      toast.success("Switched to another curated topic visual!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to shuffle image");
+    } finally {
+      setIsShufflingImage(false);
+    }
+  };
+
+  const handleGenerateInfographic = async () => {
+    if (!draft) return;
+    setIsGeneratingInfographic(true);
+    const toastId = toast.loading(
+      "Crafting B2B Executive Infographic Slide with Gemini...",
+    );
+    try {
+      const res = await fetch("/api/generate-infographic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title:
+            draft.article?.title ||
+            draft.cluster?.theme ||
+            "India Corporate Intelligence",
+          summary:
+            draft.article?.analysis?.summary ||
+            draft.cluster?.synthesisText ||
+            draft.versions?.[0]?.content ||
+            "",
+          source: draft.targetPlatform || "India BizIntel",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Infographic generation failed");
+      }
+
+      setCustomImageUrl(data.url);
+      await apiClient.put(`/content/drafts/${id}/image`, {
+        customImageUrl: data.url,
+      });
+
+      toast.success("Executive Infographic Slide created and saved!", {
+        id: toastId,
+      });
+    } catch (err: unknown) {
+      console.error(err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to generate infographic slide";
+      toast.error(msg, { id: toastId });
+    } finally {
+      setIsGeneratingInfographic(false);
+    }
+  };
+
+  const handleResetImage = async () => {
+    try {
+      setCustomImageUrl("");
+      await apiClient.put(`/content/drafts/${id}/image`, {
+        customImageUrl: null,
+      });
+      toast.info("Reverted to auto-generated image");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to reset image");
+    }
+  };
+
+  const handleOpenChatGptWithPrompt = async () => {
+    if (!draft) return;
+
+    const title =
+      draft.article?.title ||
+      draft.cluster?.theme ||
+      "India Corporate Intelligence";
+    const bodyText =
+      draft.versions?.[0]?.content || draft.article?.analysis?.summary || "";
+
+    // Extract key metrics or numbers
+    const metrics =
+      `${title} ${bodyText}`.match(
+        /(?:₹|\$|€)?\b\d+(?:,\d+)*(?:\.\d+)?(?:%|Cr|B|M|K|\+)?\b/gi,
+      ) || [];
+    const topMetrics = [
+      ...new Set(
+        metrics.filter(
+          (m) => !["2023", "2024", "2025", "2026", "2027", "2030"].includes(m),
+        ),
+      ),
+    ]
+      .slice(0, 3)
+      .join(", ");
+
+    const promptText = `Create a viral, photorealistic 16:9 widescreen B2B LinkedIn Infographic Slide for India BizIntel (Indian Corporate & Economic Intelligence) based on this article:
+
+ARTICLE TITLE: ${title}
+KEY METRICS / STATS: ${topMetrics || "Strategic Capital & Enterprise Scale"}
+ARTICLE CONTEXT:
+${bodyText.slice(0, 800)}
+
+DESIGN & AESTHETIC REQUIREMENTS:
+- Format: 16:9 Landscape Executive Slide (1200x675).
+- Background: Ultra-premium dark navy/black gradient (#060913) with ambient warm amber and electric blue glows.
+- Right Half: A photorealistic window of illuminated modern glass corporate towers and tech park skyline in India at twilight.
+- Left Half: Clean executive data architecture with:
+  1. Category pill tag in uppercase amber at the top (e.g., "INDIA BUSINESS INTELLIGENCE" or "MERGERS & ACQUISITIONS").
+  2. Large, bold high-impact headline in pure white and vibrant gold.
+  3. A 2-sentence executive summary subtitle.
+  4. 2 highlighted big stat metric callout boxes with numbers in glowing neon gold and amber.
+  5. 4 capability badges with circular glowing icons (e.g., Market Scale, Tech Moat, M&A Synergy).
+  6. A yellow discussion call-to-action bar at the bottom right.
+- Typography: Extremely crisp, modern sans-serif, perfectly legible, high contrast.
+- Style: McKinsey / Gartner / Morgan Stanley executive intelligence deck meets futuristic Bloomberg terminal.`;
+
+    // 1. Copy to clipboard as backup
+    try {
+      await navigator.clipboard.writeText(promptText);
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 3000);
+    } catch {}
+
+    // 2. Open ChatGPT with prompt prefilled in URL
+    const chatGptUrl = `https://chatgpt.com/?q=${encodeURIComponent(promptText)}`;
+    window.open(chatGptUrl, "_blank");
+
+    toast.success("Opening ChatGPT with auto-filled prompt!", {
+      description: "Prompt is also copied to your clipboard as a backup.",
+    });
+  };
 
   const handleApprove = async () => {
     if (!draft) return;
@@ -483,28 +798,242 @@ export default function DraftReviewPage({
             )}
           </Card>
 
-          {/* Featured Image (if available) */}
-          {draft.article?.imageUrl && (
-            <Card className="bg-white text-zinc-900 border border-zinc-200/80 shadow-sm rounded-xl overflow-hidden">
-              <div className="relative h-56 w-full bg-zinc-100 overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={draft.article.imageUrl}
-                  alt="Article featured preview"
-                  className="w-full h-full object-cover"
-                />
+          {/* Post Image Controls & Interactive Generator */}
+          <Card className="bg-white text-zinc-900 border border-zinc-200/80 shadow-sm rounded-xl overflow-hidden">
+            <CardHeader className="pb-3 border-b border-zinc-100">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2 text-zinc-900">
+                  <ImageIcon className="w-4 h-4 text-blue-600" />
+                  Post Image
+                </CardTitle>
+                {customImageUrl && (
+                  <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[11px]">
+                    Custom Image
+                  </Badge>
+                )}
               </div>
-              <CardContent className="p-3 bg-zinc-50 border-t border-zinc-100 text-xs text-zinc-600 flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
-                  Featured Article Image
-                </span>
-                <span className="text-[11px] text-zinc-400">
-                  Included in LinkedIn post
-                </span>
-              </CardContent>
-            </Card>
-          )}
+            </CardHeader>
+            <CardContent className="p-0">
+              {/* Image Preview */}
+              {resolvedImageUrl ? (
+                <div className="relative group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolvedImageUrl}
+                    alt="Post image preview"
+                    className="w-full h-56 object-cover"
+                  />
+                  {customImageUrl && (
+                    <button
+                      onClick={handleResetImage}
+                      className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove custom image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="h-40 flex items-center justify-center bg-zinc-50 text-zinc-400">
+                  <div className="text-center">
+                    <ImageIcon className="w-8 h-8 mx-auto mb-2 text-zinc-300" />
+                    <p className="text-sm">Auto-generated image will be used</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="p-3 border-t border-zinc-100 space-y-2.5">
+                {/* Executive Infographic Generator (Gold/Blue gradient) */}
+                <Button
+                  size="sm"
+                  onClick={handleGenerateInfographic}
+                  disabled={
+                    isGeneratingInfographic ||
+                    isGeneratingAi ||
+                    isUploadingImage ||
+                    isShufflingImage
+                  }
+                  className="w-full h-8 gap-1.5 text-xs bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold shadow-sm transition-all"
+                >
+                  {isGeneratingInfographic ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <BarChart3 className="w-3.5 h-3.5 text-amber-300" />
+                  )}
+                  {isGeneratingInfographic
+                    ? "Extracting Metrics & Rendering Slide..."
+                    : "📊 Generate Executive Infographic Slide"}
+                </Button>
+
+                {/* Secondary AI & Shuffle Controls */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateAi}
+                    disabled={
+                      isGeneratingAi ||
+                      isGeneratingInfographic ||
+                      isUploadingImage ||
+                      isShufflingImage
+                    }
+                    className="h-8 gap-1.5 text-xs border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                  >
+                    {isGeneratingAi ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                    )}
+                    {isGeneratingAi
+                      ? "Generating 3D..."
+                      : "✨ 3D Concept Visual"}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleShuffleImage}
+                    disabled={
+                      isShufflingImage ||
+                      isGeneratingAi ||
+                      isGeneratingInfographic ||
+                      isUploadingImage
+                    }
+                    className="h-8 gap-1.5 text-xs border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                  >
+                    {isShufflingImage ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                    ) : (
+                      <Shuffle className="w-3.5 h-3.5 text-blue-500" />
+                    )}
+                    {isShufflingImage
+                      ? "Shuffling..."
+                      : "🔄 Shuffle Stock Visual"}
+                  </Button>
+                </div>
+
+                {/* 1-Click Open in ChatGPT (Auto-Filled Prompt) Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenChatGptWithPrompt}
+                  className="w-full h-8 gap-1.5 text-xs border-indigo-200/90 bg-indigo-50/60 text-indigo-700 hover:text-indigo-900 hover:bg-indigo-100 transition-colors font-medium cursor-pointer"
+                  title="Opens ChatGPT in a new tab with the structured prompt already typed into the chat box"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
+                  {copiedPrompt
+                    ? "✓ Copied to Clipboard & Opening..."
+                    : "🤖 Open in ChatGPT (Auto-Filled Prompt)"}
+                </Button>
+
+                {/* Secondary Upload & Paste Controls */}
+                <div className="flex items-center gap-2">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={
+                      isUploadingImage ||
+                      isGeneratingAi ||
+                      isGeneratingInfographic ||
+                      isShufflingImage
+                    }
+                    className="h-8 gap-1.5 text-xs border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 flex-1"
+                  >
+                    {isUploadingImage ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5 text-zinc-500" />
+                    )}
+                    {isUploadingImage ? "Uploading..." : "Upload from Device"}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    disabled={
+                      isGeneratingAi ||
+                      isGeneratingInfographic ||
+                      isShufflingImage
+                    }
+                    className="h-8 gap-1.5 text-xs border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 flex-1"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-zinc-500" />
+                    Paste URL
+                  </Button>
+
+                  {customImageUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResetImage}
+                      disabled={
+                        isGeneratingAi ||
+                        isGeneratingInfographic ||
+                        isShufflingImage
+                      }
+                      className="h-8 gap-1.5 text-xs border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100"
+                      title="Reset to default auto-generated image"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      Reset
+                    </Button>
+                  )}
+                </div>
+
+                {/* URL Input */}
+                {showUrlInput && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://example.com/image.png"
+                      value={urlInputValue}
+                      onChange={(e) => setUrlInputValue(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handlePasteUrl()}
+                      className="flex-1 h-8 px-3 text-xs border border-zinc-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handlePasteUrl}
+                      className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowUrlInput(false)}
+                      className="h-8 text-xs text-zinc-500"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-zinc-500">
+                  Generate an on-demand 3D conceptual visual with AI, shuffle
+                  curated topic photos, or upload your own.
+                </p>
+                {customImageUrl && (
+                  <p className="text-[11px] text-blue-600 font-medium">
+                    ✓ Your custom image will be used when publishing to
+                    LinkedIn.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Article Summary Card */}
           <Card className="bg-white text-zinc-900 border border-zinc-200/80 shadow-sm rounded-xl">
@@ -757,7 +1286,7 @@ export default function DraftReviewPage({
             <CardContent className="p-6 bg-[#f3f2ef] flex items-center justify-center">
               <LinkedInPostPreview
                 content={editedText}
-                imageUrl={draft?.article?.imageUrl}
+                imageUrl={resolvedImageUrl || undefined}
               />
             </CardContent>
           </Card>
